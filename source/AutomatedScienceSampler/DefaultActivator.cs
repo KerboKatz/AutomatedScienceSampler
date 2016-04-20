@@ -150,10 +150,9 @@ namespace KerboKatz.ASS
       }
       if (!_AutomatedScienceSamplerInstance.settings.dumpDuplicates)
       {
-        var scienceData = moduleScienceContainer.GetData();
         foreach (var data in experiment.GetData())
         {
-          if (scienceData.Contains(data))
+          if (moduleScienceContainer.HasData(data))
           {
             return false;
           }
@@ -161,7 +160,6 @@ namespace KerboKatz.ASS
       }
       return true;
     }
-
     public void Transfer(ModuleScienceExperiment experiment, ModuleScienceContainer moduleScienceContainer)
     {
       moduleScienceContainer.StoreData(new List<IScienceDataContainer>() { experiment }, _AutomatedScienceSamplerInstance.settings.dumpDuplicates);

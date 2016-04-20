@@ -175,7 +175,7 @@ namespace KerboKatz.ASS
     }
     private void OnToolbar()
     {
-      if (Input.GetKey(KeyCode.LeftAlt))
+      if (Input.GetMouseButtonUp(1))
       {
         var uiData = GetUIData(settingsUIName);
         if (uiData == null || uiData.canvasGroup == null)

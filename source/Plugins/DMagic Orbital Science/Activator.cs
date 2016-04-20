@@ -42,12 +42,12 @@ namespace KerboKatz.ASS
     public List<Type> GetValidTypes()
     {
       var allTypes = from assembly in AppDomain.CurrentDomain.GetAssemblies()
-                   from type in assembly.GetTypes()
-                   where type.IsClass && !type.IsAbstract && type.IsSubclassOf(typeof(DMModuleScienceAnimate))
-                   select type;
+                     from type in assembly.GetTypes()
+                     where type.IsClass && !type.IsAbstract && type.IsSubclassOf(typeof(DMModuleScienceAnimate))
+                     select type;
       var types = new List<Type>(allTypes);
       types.Add(typeof(DMModuleScienceAnimate));
-      foreach(var t in types)
+      foreach (var t in types)
       {
         Debug.Log(t);
       }
@@ -57,7 +57,7 @@ namespace KerboKatz.ASS
     {
       if (!experiment.resettable)
       {
-        _AutomatedScienceSamplerInstance.Log(experiment.experimentID , ": Experiment isn't resetable");
+        _AutomatedScienceSamplerInstance.Log(experiment.experimentID, ": Experiment isn't resetable");
         return false;
       }
       bool hasScientist = false;
@@ -71,7 +71,7 @@ namespace KerboKatz.ASS
       }
       if (!hasScientist)
       {
-        _AutomatedScienceSamplerInstance.Log(experiment.experimentID , ": Vessel has no scientist");
+        _AutomatedScienceSamplerInstance.Log(experiment.experimentID, ": Vessel has no scientist");
         return false;
       }
       return true;
@@ -80,7 +80,7 @@ namespace KerboKatz.ASS
     public void Reset(ModuleScienceExperiment baseExperiment)
     {
       var currentExperiment = baseExperiment as DMModuleScienceAnimate;
-      _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID , ": Reseting experiment");
+      _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Reseting experiment");
       currentExperiment.ResetExperiment();
     }
 
@@ -109,9 +109,10 @@ namespace KerboKatz.ASS
       return string.Empty;
     }
 
-    public bool CanTransfer(ModuleScienceExperiment experiment, ModuleScienceContainer moduleScienceContainer)
+    public bool CanTransfer(ModuleScienceExperiment baseExperiment, ModuleScienceContainer moduleScienceContainer)
     {
-      if (!experiment.IsRerunnable())
+      var currentExperiment = baseExperiment as DMModuleScienceAnimate;
+      if (!currentExperiment.IsRerunnable())
       {
         if (!_AutomatedScienceSamplerInstance.settings.transferAllData)
         {
@@ -120,10 +121,9 @@ namespace KerboKatz.ASS
       }
       if (!_AutomatedScienceSamplerInstance.settings.dumpDuplicates)
       {
-        var scienceData = moduleScienceContainer.GetData();
-        foreach (var data in experiment.GetData())
+        foreach (var data in currentExperiment.GetData())
         {
-          if (scienceData.Contains(data))
+          if (moduleScienceContainer.HasData(data))
           {
             return false;
           }
@@ -132,9 +132,10 @@ namespace KerboKatz.ASS
       return true;
     }
 
-    public void Transfer(ModuleScienceExperiment experiment, ModuleScienceContainer moduleScienceContainer)
+    public void Transfer(ModuleScienceExperiment baseExperiment, ModuleScienceContainer moduleScienceContainer)
     {
-      moduleScienceContainer.StoreData(new List<IScienceDataContainer>() { experiment as DMModuleScienceAnimate }, _AutomatedScienceSamplerInstance.settings.dumpDuplicates);
+      var currentExperiment = baseExperiment as DMModuleScienceAnimate;
+      moduleScienceContainer.StoreData(new List<IScienceDataContainer>() { currentExperiment as DMModuleScienceAnimate }, _AutomatedScienceSamplerInstance.settings.dumpDuplicates);
     }
   }
 }
