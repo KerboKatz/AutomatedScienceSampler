@@ -75,7 +75,7 @@ namespace KerboKatz.ASS
 
     public float GetScienceValue(ModuleScienceExperiment experiment, Dictionary<string, int> shipCotainsExperiments, ScienceSubject currentScienceSubject)
     {
-      return Utilities.Science.getScienceValue(shipCotainsExperiments, experiment.experiment, currentScienceSubject);
+      return Utilities.Science.GetScienceValue(shipCotainsExperiments, experiment.experiment, currentScienceSubject);
     }
 
     public List<Type> GetValidTypes()

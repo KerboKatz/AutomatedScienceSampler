@@ -39,7 +39,7 @@ namespace KerboKatz.ASS
       displayName = "Automated Science Sampler";
       settingsUIName = "AutomatedScienceSampler";
       tooltip = "Use left click to turn AutomatedScienceSampler on/off.\n Use shift+left click to open the settings menu.";
-      requiresUtilities = new Version(1, 3, 0);
+      requiresUtilities = new Version(1, 3, 1);
       ToolbarBase.instance.Add(this);
       LoadSettings("AutomatedScienceSampler", "Settings");
       Log("Init done!");
