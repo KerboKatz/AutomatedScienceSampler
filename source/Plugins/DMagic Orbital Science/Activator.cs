@@ -19,6 +19,17 @@ namespace KerboKatz.ASS
 
     public bool CanRunExperiment(ModuleScienceExperiment baseExperiment, float currentScienceValue)
     {
+      var currentExperiment = baseExperiment as DMModuleScienceAnimate;
+      if (currentScienceValue < _AutomatedScienceSamplerInstance.settings.threshold)
+      {
+        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Science value is less than cutoff threshold: ", currentScienceValue, "<", _AutomatedScienceSamplerInstance.settings.threshold);
+        return false;
+      }
+      if (!currentExperiment.experiment.IsUnlocked())
+      {
+        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment is locked");
+        return false;
+      }
       return DMModuleScienceAnimate.conduct(baseExperiment);
     }
 
@@ -28,15 +39,15 @@ namespace KerboKatz.ASS
       currentExperiment.gatherScienceData(_AutomatedScienceSamplerInstance.settings.hideScienceDialog);
     }
 
-    public ScienceSubject GetScienceSubject(ScienceExperiment experiment)
+    public ScienceSubject GetScienceSubject(ModuleScienceExperiment baseExperiment)
     {
-      //experiment.BiomeIsRelevantWhile
-      return ResearchAndDevelopment.GetExperimentSubject(experiment, ScienceUtil.GetExperimentSituation(FlightGlobals.ActiveVessel), FlightGlobals.currentMainBody, CurrentBiome(experiment));
+      var currentExperiment = baseExperiment as DMModuleScienceAnimate;
+      return ResearchAndDevelopment.GetExperimentSubject(ResearchAndDevelopment.GetExperiment(currentExperiment.experimentID), ScienceUtil.GetExperimentSituation(FlightGlobals.ActiveVessel), FlightGlobals.currentMainBody, CurrentBiome(currentExperiment));
     }
 
-    public float GetScienceValue(ScienceExperiment experiment, Dictionary<string, int> shipCotainsExperiments, ScienceSubject currentScienceSubject)
+    public float GetScienceValue(ModuleScienceExperiment experiment, Dictionary<string, int> shipCotainsExperiments, ScienceSubject currentScienceSubject)
     {
-      return Utilities.Science.getScienceValue(shipCotainsExperiments, experiment, currentScienceSubject);
+      return Utilities.Science.getScienceValue(shipCotainsExperiments, ResearchAndDevelopment.GetExperiment(experiment.experimentID), currentScienceSubject);
     }
 
     public List<Type> GetValidTypes()
@@ -84,10 +95,16 @@ namespace KerboKatz.ASS
       currentExperiment.ResetExperiment();
     }
 
-    private string CurrentBiome(ScienceExperiment experiment)
+    private string CurrentBiome(DMModuleScienceAnimate baseModuleExperiment)
     {
-      if (!experiment.BiomeIsRelevantWhile(ScienceUtil.GetExperimentSituation(FlightGlobals.ActiveVessel)))
+      var experimentSituation = ScienceUtil.GetExperimentSituation(FlightGlobals.ActiveVessel);
+      if (!baseModuleExperiment.experiment.BiomeIsRelevantWhile(experimentSituation))
         return string.Empty;
+
+      //var currentModuleExperiment = baseModuleExperiment as DMModuleScienceAnimate;
+      if ((baseModuleExperiment.bioMask & (int)experimentSituation) == 0)
+        return string.Empty;
+
       var currentVessel = FlightGlobals.ActiveVessel;
       var currentBody = FlightGlobals.currentMainBody;
       if (currentVessel != null && currentBody != null)

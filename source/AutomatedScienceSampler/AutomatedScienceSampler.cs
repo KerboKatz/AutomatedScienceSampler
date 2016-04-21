@@ -263,8 +263,8 @@ namespace KerboKatz.ASS
           Log("Activator for ", experiment.GetType(), " not found! Using default!");
           activator = DefaultActivator.instance;
         }
-        var subject = activator.GetScienceSubject(experiment.experiment);
-        var value = activator.GetScienceValue(experiment.experiment, shipCotainsExperiments, subject);
+        var subject = activator.GetScienceSubject(experiment);
+        var value = activator.GetScienceValue(experiment, shipCotainsExperiments, subject);
         if (activator.CanRunExperiment(experiment, value))
         {
           Log("Deploying ", experiment.part.name, " for :", value, " science! ", subject.id);

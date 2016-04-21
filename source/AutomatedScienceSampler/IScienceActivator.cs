@@ -9,13 +9,13 @@ namespace KerboKatz.ASS
 
     //float GetScience();
     List<Type> GetValidTypes();
-    ScienceSubject GetScienceSubject(ScienceExperiment experiment);
-    float GetScienceValue(ScienceExperiment experiment, Dictionary<string, int> shipCotainsExperiments, ScienceSubject currentScienceSubject);
-    bool CanRunExperiment(ModuleScienceExperiment currentExperiment, float currentScienceValue);
-    void DeployExperiment(ModuleScienceExperiment currentExperiment);
-    bool CanReset(ModuleScienceExperiment experiment);
-    void Reset(ModuleScienceExperiment experiment);
-    bool CanTransfer(ModuleScienceExperiment experiment, ModuleScienceContainer moduleScienceContainer);
-    void Transfer(ModuleScienceExperiment experiment, ModuleScienceContainer moduleScienceContainer);
+    ScienceSubject GetScienceSubject(ModuleScienceExperiment baseExperimentModule);
+    float GetScienceValue(ModuleScienceExperiment baseExperimentModule, Dictionary<string, int> shipCotainsExperiments, ScienceSubject currentScienceSubject);
+    bool CanRunExperiment(ModuleScienceExperiment baseExperimentModule, float currentScienceValue);
+    void DeployExperiment(ModuleScienceExperiment baseExperimentModule);
+    bool CanReset(ModuleScienceExperiment baseExperimentModule);
+    void Reset(ModuleScienceExperiment baseExperimentModule);
+    bool CanTransfer(ModuleScienceExperiment baseExperimentModule, ModuleScienceContainer moduleScienceContainer);
+    void Transfer(ModuleScienceExperiment baseExperimentModule, ModuleScienceContainer moduleScienceContainer);
   }
 }

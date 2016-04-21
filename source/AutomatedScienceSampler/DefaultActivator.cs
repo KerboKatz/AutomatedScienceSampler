@@ -67,15 +67,15 @@ namespace KerboKatz.ASS
       }
     }
 
-    public ScienceSubject GetScienceSubject(ScienceExperiment experiment)
+    public ScienceSubject GetScienceSubject(ModuleScienceExperiment experiment)
     {
       //experiment.BiomeIsRelevantWhile
-      return ResearchAndDevelopment.GetExperimentSubject(experiment, ScienceUtil.GetExperimentSituation(FlightGlobals.ActiveVessel), FlightGlobals.currentMainBody, CurrentBiome(experiment));
+      return ResearchAndDevelopment.GetExperimentSubject(experiment.experiment, ScienceUtil.GetExperimentSituation(FlightGlobals.ActiveVessel), FlightGlobals.currentMainBody, CurrentBiome(experiment.experiment));
     }
 
-    public float GetScienceValue(ScienceExperiment experiment, Dictionary<string, int> shipCotainsExperiments, ScienceSubject currentScienceSubject)
+    public float GetScienceValue(ModuleScienceExperiment experiment, Dictionary<string, int> shipCotainsExperiments, ScienceSubject currentScienceSubject)
     {
-      return Utilities.Science.getScienceValue(shipCotainsExperiments, experiment, currentScienceSubject);
+      return Utilities.Science.getScienceValue(shipCotainsExperiments, experiment.experiment, currentScienceSubject);
     }
 
     public List<Type> GetValidTypes()
