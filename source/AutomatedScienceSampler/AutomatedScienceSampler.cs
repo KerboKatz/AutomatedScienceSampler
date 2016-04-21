@@ -60,27 +60,36 @@ namespace KerboKatz.ASS
     }
     private void GetScienceActivators()
     {
-      var instances = from assembly in AppDomain.CurrentDomain.GetAssemblies()
-                      from t in assembly.GetTypes()
-                      where t.GetInterfaces().Contains(typeof(IScienceActivator))
-                              && t.GetConstructor(Type.EmptyTypes) != null
-                      select Activator.CreateInstance(t) as IScienceActivator;
       Log("Starting search");
-      foreach (var activator in instances)
+      foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
       {
         try
         {
-          activator.AutomatedScienceSampler = this;
-          Log("Found" , activator.GetType());
-          foreach (var type in activator.GetValidTypes())
+          foreach (var type in assembly.GetTypes())
           {
-            Log("...for type: " , type);
-            activators.Add(type, activator);
+            try
+            {
+              if (type.GetInterfaces().Contains(typeof(IScienceActivator)) && type.GetConstructor(Type.EmptyTypes) != null)
+              {
+                var activator = Activator.CreateInstance(type) as IScienceActivator;
+                activator.AutomatedScienceSampler = this;
+                Log("Found", activator.GetType());
+                foreach (var validType in activator.GetValidTypes())
+                {
+                  Log("...for type: ", validType);
+                  activators.Add(validType, activator);
+                }
+              }
+            }
+            catch (Exception e)
+            {
+              Log("Failed to initialize activator. We cought the exception so its all good!\n", e);
+            }
           }
         }
         catch (Exception e)
         {
-          Log("Failed to initialize activator. If you aren't using one of the plugins this message is harmless!\n" , e);
+          Log("Failed to GetTypes. We cought the exception so its all good!\n", e);
         }
       }
       DefaultActivator.instance = activators[typeof(ModuleScienceExperiment)] as DefaultActivator;
@@ -251,14 +260,14 @@ namespace KerboKatz.ASS
         IScienceActivator activator;
         if (!activators.TryGetValue(experiment.GetType(), out activator))
         {
-          Log("Activator for " , experiment.GetType() , " not found! Using default!");
+          Log("Activator for ", experiment.GetType(), " not found! Using default!");
           activator = DefaultActivator.instance;
         }
         var subject = activator.GetScienceSubject(experiment.experiment);
         var value = activator.GetScienceValue(experiment.experiment, shipCotainsExperiments, subject);
         if (activator.CanRunExperiment(experiment, value))
         {
-          Log("Deploying " , experiment.part.name , " for :" ,value , " science! " , subject.id);
+          Log("Deploying ", experiment.part.name, " for :", value, " science! ", subject.id);
           activator.DeployExperiment(experiment);
           AddToContainer(subject.id);
         }
@@ -272,7 +281,7 @@ namespace KerboKatz.ASS
         }
         Log(sw.Elapsed.TotalMilliseconds);
       }
-      Log("Total: " , sw.Elapsed.TotalMilliseconds);
+      Log("Total: ", sw.Elapsed.TotalMilliseconds);
     }
 
     private void UpdateShipInformation()
