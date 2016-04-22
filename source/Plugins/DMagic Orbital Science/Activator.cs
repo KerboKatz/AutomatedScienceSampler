@@ -52,16 +52,16 @@ namespace KerboKatz.ASS
 
     public List<Type> GetValidTypes()
     {
-      var allTypes = from assembly in AppDomain.CurrentDomain.GetAssemblies()
-                     from type in assembly.GetTypes()
-                     where type.IsClass && !type.IsAbstract && type.IsSubclassOf(typeof(DMModuleScienceAnimate))
-                     select type;
-      var types = new List<Type>(allTypes);
+      var types = new List<Type>();
       types.Add(typeof(DMModuleScienceAnimate));
-      foreach (var t in types)
+
+      Utilities.LoopTroughAssemblies((type) =>
       {
-        Debug.Log(t);
-      }
+        if(type.IsClass && !type.IsAbstract && type.IsSubclassOf(typeof(DMModuleScienceAnimate)))
+        {
+          types.Add(type);
+        }
+      });
       return types;
     }
     public bool CanReset(ModuleScienceExperiment experiment)

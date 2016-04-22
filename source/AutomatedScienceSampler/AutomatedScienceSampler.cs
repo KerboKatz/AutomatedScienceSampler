@@ -39,7 +39,7 @@ namespace KerboKatz.ASS
       displayName = "Automated Science Sampler";
       settingsUIName = "AutomatedScienceSampler";
       tooltip = "Use left click to turn AutomatedScienceSampler on/off.\n Use shift+left click to open the settings menu.";
-      requiresUtilities = new Version(1, 3, 1);
+      requiresUtilities = new Version(1, 3, 2);
       ToolbarBase.instance.Add(this);
       LoadSettings("AutomatedScienceSampler", "Settings");
       Log("Init done!");
@@ -61,39 +61,25 @@ namespace KerboKatz.ASS
     private void GetScienceActivators()
     {
       Log("Starting search");
-      foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-      {
-        try
-        {
-          foreach (var type in assembly.GetTypes())
-          {
-            try
-            {
-              if (type.GetInterfaces().Contains(typeof(IScienceActivator)) && type.GetConstructor(Type.EmptyTypes) != null)
-              {
-                var activator = Activator.CreateInstance(type) as IScienceActivator;
-                activator.AutomatedScienceSampler = this;
-                Log("Found", activator.GetType());
-                foreach (var validType in activator.GetValidTypes())
-                {
-                  Log("...for type: ", validType);
-                  activators.Add(validType, activator);
-                }
-              }
-            }
-            catch (Exception e)
-            {
-              Log("Failed to initialize activator. We cought the exception so its all good!\n", e);
-            }
-          }
-        }
-        catch (Exception e)
-        {
-          Log("Failed to GetTypes. We cought the exception so its all good!\n", e);
-        }
-      }
+      Utilities.LoopTroughAssemblies(CheckTypeForScienceActivator);
+
       DefaultActivator.instance = activators[typeof(ModuleScienceExperiment)] as DefaultActivator;
       GameEvents.onVesselChange.Add(OnVesselChange);
+    }
+
+    private void CheckTypeForScienceActivator(Type type)
+    {
+      if (type.GetInterfaces().Contains(typeof(IScienceActivator)) && type.GetConstructor(Type.EmptyTypes) != null)
+      {
+        var activator = Activator.CreateInstance(type) as IScienceActivator;
+        activator.AutomatedScienceSampler = this;
+        Log("Found", activator.GetType());
+        foreach (var validType in activator.GetValidTypes())
+        {
+          Log("...for type: ", validType);
+          activators.Add(validType, activator);
+        }
+      }
     }
 
     protected override void AfterDestroy()
@@ -118,6 +104,7 @@ namespace KerboKatz.ASS
       InitToggle(content, "Debug", settings.debug, OnDebugChange);
       InitSlider(content, "SpriteFPS", settings.spriteFPS, OnSpriteFPSChange);
       transferScienceUIElement = InitDropdown(content, "TransferScience", OnTransferScienceChange);
+
 
     }
 
@@ -146,6 +133,17 @@ namespace KerboKatz.ASS
     {
       currentSelectedContainer = arg0;
       Log("OnTransferScienceChange");
+      if (currentSelectedContainer != 0 && scienceContainers.Count <= currentSelectedContainer)
+      {
+        StartCoroutine(DisableHighlight(0.25f, scienceContainers[currentSelectedContainer - 1].part));
+      }
+    }
+
+    private IEnumerator DisableHighlight(float time, Part part)
+    {
+      part.SetHighlight(true, false);
+      yield return new WaitForSeconds(time);
+      part.SetHighlight(false, false);
     }
 
     private void OnDebugChange(bool arg0)
@@ -271,13 +269,13 @@ namespace KerboKatz.ASS
           activator.DeployExperiment(experiment);
           AddToContainer(subject.id);
         }
-        else if (settings.resetExperiments && activator.CanReset(experiment))
-        {
-          activator.Reset(experiment);
-        }
         else if (currentSelectedContainer != 0 && scienceContainers.Count <= currentSelectedContainer && activator.CanTransfer(experiment, scienceContainers[currentSelectedContainer - 1]))
         {
           activator.Transfer(experiment, scienceContainers[currentSelectedContainer - 1]);
+        }
+        else if (settings.resetExperiments && activator.CanReset(experiment))
+        {
+          activator.Reset(experiment);
         }
         Log(sw.Elapsed.TotalMilliseconds);
       }
