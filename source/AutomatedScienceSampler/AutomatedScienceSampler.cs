@@ -132,8 +132,8 @@ namespace KerboKatz.ASS
     private void OnTransferScienceChange(int arg0)
     {
       currentSelectedContainer = arg0;
-      Log("OnTransferScienceChange");
-      if (currentSelectedContainer != 0 && scienceContainers.Count <= currentSelectedContainer)
+      Log("OnTransferScienceChange ");
+      if (currentSelectedContainer != 0 && scienceContainers.Count >= currentSelectedContainer)
       {
         StartCoroutine(DisableHighlight(0.25f, scienceContainers[currentSelectedContainer - 1].part));
       }
@@ -269,7 +269,7 @@ namespace KerboKatz.ASS
           activator.DeployExperiment(experiment);
           AddToContainer(subject.id);
         }
-        else if (currentSelectedContainer != 0 && scienceContainers.Count <= currentSelectedContainer && activator.CanTransfer(experiment, scienceContainers[currentSelectedContainer - 1]))
+        else if (currentSelectedContainer != 0 && currentSelectedContainer <= scienceContainers.Count && activator.CanTransfer(experiment, scienceContainers[currentSelectedContainer - 1]))
         {
           activator.Transfer(experiment, scienceContainers[currentSelectedContainer - 1]);
         }
@@ -277,6 +277,7 @@ namespace KerboKatz.ASS
         {
           activator.Reset(experiment);
         }
+
         Log(sw.Elapsed.TotalMilliseconds);
       }
       Log("Total: ", sw.Elapsed.TotalMilliseconds);

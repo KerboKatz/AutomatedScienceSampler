@@ -57,18 +57,29 @@ namespace KerboKatz.ASS
 
       Utilities.LoopTroughAssemblies((type) =>
       {
-        if(type.IsClass && !type.IsAbstract && type.IsSubclassOf(typeof(DMModuleScienceAnimate)))
+        if (type.IsClass && !type.IsAbstract && type.IsSubclassOf(typeof(DMModuleScienceAnimate)))
         {
           types.Add(type);
         }
       });
       return types;
     }
-    public bool CanReset(ModuleScienceExperiment experiment)
+    public bool CanReset(ModuleScienceExperiment baseExperiment)
     {
-      if (!experiment.resettable)
+      var currentExperiment = baseExperiment as DMModuleScienceAnimate;
+      if (!currentExperiment.Deployed)
       {
-        _AutomatedScienceSamplerInstance.Log(experiment.experimentID, ": Experiment isn't resetable");
+        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment isn't deployed!");
+        return false;
+      }
+      if (currentExperiment.GetData().Length > 0)
+      {
+        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment has data!");
+        return false;
+      }
+      if (!currentExperiment.resettable)
+      {
+        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment isn't resetable");
         return false;
       }
       bool hasScientist = false;
@@ -82,7 +93,7 @@ namespace KerboKatz.ASS
       }
       if (!hasScientist)
       {
-        _AutomatedScienceSamplerInstance.Log(experiment.experimentID, ": Vessel has no scientist");
+        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Vessel has no scientist");
         return false;
       }
       return true;
@@ -129,10 +140,17 @@ namespace KerboKatz.ASS
     public bool CanTransfer(ModuleScienceExperiment baseExperiment, ModuleScienceContainer moduleScienceContainer)
     {
       var currentExperiment = baseExperiment as DMModuleScienceAnimate;
+
+      if (currentExperiment.GetData().Length == 0)
+      {
+        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment has no data skiping transfer");
+        return false;
+      }
       if (!currentExperiment.IsRerunnable())
       {
         if (!_AutomatedScienceSamplerInstance.settings.transferAllData)
         {
+          _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment isn't rerunnable and transferAllData is turned off.");
           return false;
         }
       }
@@ -142,16 +160,18 @@ namespace KerboKatz.ASS
         {
           if (moduleScienceContainer.HasData(data))
           {
+            _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Target already has experiment and dumping is disabled.");
             return false;
           }
         }
       }
+      _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": We can transfer the science!");
       return true;
     }
-
     public void Transfer(ModuleScienceExperiment baseExperiment, ModuleScienceContainer moduleScienceContainer)
     {
       var currentExperiment = baseExperiment as DMModuleScienceAnimate;
+      _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": transfering");
       moduleScienceContainer.StoreData(new List<IScienceDataContainer>() { currentExperiment as DMModuleScienceAnimate }, _AutomatedScienceSamplerInstance.settings.dumpDuplicates);
     }
   }
