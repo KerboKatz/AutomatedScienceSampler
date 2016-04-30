@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 using KerboKatz;
+using DMagic;
 
 namespace KerboKatz.ASS
 {
@@ -20,9 +21,24 @@ namespace KerboKatz.ASS
     public bool CanRunExperiment(ModuleScienceExperiment baseExperiment, float currentScienceValue)
     {
       var currentExperiment = baseExperiment as DMModuleScienceAnimate;
-      if (currentScienceValue < _AutomatedScienceSamplerInstance.settings.threshold)
+      if (currentScienceValue < _AutomatedScienceSamplerInstance.craftSettings.threshold)
       {
-        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Science value is less than cutoff threshold: ", currentScienceValue, "<", _AutomatedScienceSamplerInstance.settings.threshold);
+        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Science value is less than cutoff threshold: ", currentScienceValue, "<", _AutomatedScienceSamplerInstance.craftSettings.threshold);
+        return false;
+      }
+      if (!currentExperiment.rerunnable && !_AutomatedScienceSamplerInstance.craftSettings.oneTimeOnly)
+      {
+        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Runing rerunable experiments is disabled");
+        return false;
+      }
+      if (currentExperiment.Inoperable)
+      {
+        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment is inoperable");
+        return false;
+      }
+      if (currentExperiment.Deployed)
+      {
+        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment is deployed");
         return false;
       }
       if (!currentExperiment.experiment.IsUnlocked())
@@ -30,26 +46,45 @@ namespace KerboKatz.ASS
         _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment is locked");
         return false;
       }
-      return DMModuleScienceAnimate.conduct(baseExperiment);
+      return DMAPI.experimentCanConduct(currentExperiment);
     }
 
     public void DeployExperiment(ModuleScienceExperiment baseExperiment)
     {
       var currentExperiment = baseExperiment as DMModuleScienceAnimate;
-      currentExperiment.gatherScienceData(_AutomatedScienceSamplerInstance.settings.hideScienceDialog);
+      DMAPI.deployDMExperiment(currentExperiment, _AutomatedScienceSamplerInstance.craftSettings.hideScienceDialog);
     }
 
     public ScienceSubject GetScienceSubject(ModuleScienceExperiment baseExperiment)
     {
+      
       var currentExperiment = baseExperiment as DMModuleScienceAnimate;
-      return ResearchAndDevelopment.GetExperimentSubject(ResearchAndDevelopment.GetExperiment(currentExperiment.experimentID), ScienceUtil.GetExperimentSituation(FlightGlobals.ActiveVessel), FlightGlobals.currentMainBody, CurrentBiome(currentExperiment));
+      if (DMAPI.isAsteroidGrappled(baseExperiment))
+      {
+        return DMAPI.getAsteroidSubject(currentExperiment);
+      }
+      else
+      {
+        ExperimentSituations situation = ScienceUtil.GetExperimentSituation(FlightGlobals.ActiveVessel);
+        var biome = DMAPI.getBiome(baseExperiment, situation);
+        _AutomatedScienceSamplerInstance.Log(biome, "_", situation, "_", ResearchAndDevelopment.GetExperimentSubject(ResearchAndDevelopment.GetExperiment(currentExperiment.experimentID), situation, FlightGlobals.currentMainBody, biome) == null);
+        return ResearchAndDevelopment.GetExperimentSubject(ResearchAndDevelopment.GetExperiment(currentExperiment.experimentID), situation, FlightGlobals.currentMainBody, biome);
+      }
     }
 
-    public float GetScienceValue(ModuleScienceExperiment experiment, Dictionary<string, int> shipCotainsExperiments, ScienceSubject currentScienceSubject)
+    public float GetScienceValue(ModuleScienceExperiment baseExperiment, Dictionary<string, int> shipCotainsExperiments, ScienceSubject currentScienceSubject)
     {
-      return Utilities.Science.GetScienceValue(shipCotainsExperiments, ResearchAndDevelopment.GetExperiment(experiment.experimentID), currentScienceSubject);
+      var currentExperiment = baseExperiment as DMModuleScienceAnimate;
+      var scienceExperiment = ResearchAndDevelopment.GetExperiment(baseExperiment.experimentID);
+      if (DMAPI.isAsteroidGrappled(currentExperiment))
+      {
+        return Utilities.Science.GetScienceValue(shipCotainsExperiments, scienceExperiment, currentScienceSubject/*, null, GetNextScienceValue*/);
+      }
+      else
+      {
+        return Utilities.Science.GetScienceValue(shipCotainsExperiments, scienceExperiment, currentScienceSubject);
+      }
     }
-
     public List<Type> GetValidTypes()
     {
       var types = new List<Type>();
@@ -67,12 +102,17 @@ namespace KerboKatz.ASS
     public bool CanReset(ModuleScienceExperiment baseExperiment)
     {
       var currentExperiment = baseExperiment as DMModuleScienceAnimate;
+      if (!currentExperiment.Inoperable)
+      {
+        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment isn't inoperable");
+        return false;
+      }
       if (!currentExperiment.Deployed)
       {
         _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment isn't deployed!");
         return false;
       }
-      if (currentExperiment.GetData().Length > 0)
+      if ((currentExperiment as IScienceDataContainer).GetScienceCount() > 0)
       {
         _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment has data!");
         return false;
@@ -111,8 +151,7 @@ namespace KerboKatz.ASS
       var experimentSituation = ScienceUtil.GetExperimentSituation(FlightGlobals.ActiveVessel);
       if (!baseModuleExperiment.experiment.BiomeIsRelevantWhile(experimentSituation))
         return string.Empty;
-
-      //var currentModuleExperiment = baseModuleExperiment as DMModuleScienceAnimate;
+      
       if ((baseModuleExperiment.bioMask & (int)experimentSituation) == 0)
         return string.Empty;
 
@@ -140,23 +179,22 @@ namespace KerboKatz.ASS
     public bool CanTransfer(ModuleScienceExperiment baseExperiment, ModuleScienceContainer moduleScienceContainer)
     {
       var currentExperiment = baseExperiment as DMModuleScienceAnimate;
-
-      if (currentExperiment.GetData().Length == 0)
+      if ((currentExperiment as IScienceDataContainer).GetScienceCount() == 0)
       {
-        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment has no data skiping transfer");
+        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment has no data skiping transfer. Data found: ", (currentExperiment as IScienceDataContainer).GetScienceCount(),"_", currentExperiment.experimentNumber);
         return false;
       }
       if (!currentExperiment.IsRerunnable())
       {
-        if (!_AutomatedScienceSamplerInstance.settings.transferAllData)
+        if (!_AutomatedScienceSamplerInstance.craftSettings.transferAllData)
         {
           _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment isn't rerunnable and transferAllData is turned off.");
           return false;
         }
       }
-      if (!_AutomatedScienceSamplerInstance.settings.dumpDuplicates)
+      if (!_AutomatedScienceSamplerInstance.craftSettings.dumpDuplicates)
       {
-        foreach (var data in currentExperiment.GetData())
+        foreach (var data in (currentExperiment as IScienceDataContainer).GetData())
         {
           if (moduleScienceContainer.HasData(data))
           {
@@ -172,7 +210,7 @@ namespace KerboKatz.ASS
     {
       var currentExperiment = baseExperiment as DMModuleScienceAnimate;
       _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": transfering");
-      moduleScienceContainer.StoreData(new List<IScienceDataContainer>() { currentExperiment as DMModuleScienceAnimate }, _AutomatedScienceSamplerInstance.settings.dumpDuplicates);
+      moduleScienceContainer.StoreData(new List<IScienceDataContainer>() { currentExperiment as DMModuleScienceAnimate }, _AutomatedScienceSamplerInstance.craftSettings.dumpDuplicates);
     }
   }
 }

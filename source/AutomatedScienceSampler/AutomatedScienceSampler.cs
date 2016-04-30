@@ -23,13 +23,17 @@ namespace KerboKatz.ASS
     private float CurrentFrame;
     private float lastFrameCheck;
     private static List<GameScenes> _activeScences = new List<GameScenes>() { GameScenes.FLIGHT };
-    private Sprite _icon = AssetLoader.GetAsset<Sprite>("icon56", "Icons/AutomatedScienceSampler");//Utilities.GetTexture("icon56", "AutomatedScienceSampler/Textures");
-    private int currentSelectedContainer;
+    private Sprite _icon = AssetLoader.GetAsset<Sprite>("icon56", "Icons/AutomatedScienceSampler", "AutomatedScienceSampler/AutomatedScienceSampler");//Utilities.GetTexture("icon56", "AutomatedScienceSampler/Textures");
+    //private int currentSelectedContainer;
     private List<ModuleScienceExperiment> experiments;
     private List<ModuleScienceContainer> scienceContainers;
     private Dropdown transferScienceUIElement;
     private bool isReady;
     string settingsUIName;
+    private KerbalEVA kerbalEVAPart;
+    private Vessel parentVessel;
+    public PerCraftSetting craftSettings;
+    private Transform uiContent;
 
     private float frameCheck { get { return 1 / settings.spriteFPS; } }
     #region init/destroy
@@ -39,7 +43,7 @@ namespace KerboKatz.ASS
       displayName = "Automated Science Sampler";
       settingsUIName = "AutomatedScienceSampler";
       tooltip = "Use left click to turn AutomatedScienceSampler on/off.\n Use shift+left click to open the settings menu.";
-      requiresUtilities = new Version(1, 3, 2);
+      requiresUtilities = new Version(1, 3, 3);
       ToolbarBase.instance.Add(this);
       LoadSettings("AutomatedScienceSampler", "Settings");
       Log("Init done!");
@@ -55,7 +59,10 @@ namespace KerboKatz.ASS
         return;
       }
       GetScienceActivators();
-      LoadUI(settingsUIName);
+      LoadUI(settingsUIName, "AutomatedScienceSampler/AutomatedScienceSampler");
+
+      GameEvents.onVesselChange.Add(OnVesselChange);
+      GameEvents.onCrewOnEva.Add(GoingEva);
       Log("Awake");
     }
     private void GetScienceActivators()
@@ -64,7 +71,6 @@ namespace KerboKatz.ASS
       Utilities.LoopTroughAssemblies(CheckTypeForScienceActivator);
 
       DefaultActivator.instance = activators[typeof(ModuleScienceExperiment)] as DefaultActivator;
-      GameEvents.onVesselChange.Add(OnVesselChange);
     }
 
     private void CheckTypeForScienceActivator(Type type)
@@ -85,39 +91,68 @@ namespace KerboKatz.ASS
     protected override void AfterDestroy()
     {
       GameEvents.onVesselChange.Remove(OnVesselChange);
+      GameEvents.onCrewOnEva.Remove(GoingEva);
       ToolbarBase.instance.Remove(this);
       Log("AfterDestroy");
+    }
+
+    private void GetCraftSettings()
+    {
+      string guid;
+      if (FlightGlobals.ActiveVessel.isEVA)
+      {
+        if (parentVessel != null)
+          guid = parentVessel.id.ToString();
+        else
+          guid = "EVA";
+      }
+      else
+      {
+        guid = FlightGlobals.ActiveVessel.id.ToString();
+      }
+
+      craftSettings = settings.GetSettingsForCraft(guid);
+      UpdateUIVisuals();
+      //LoadUI(settingsUIName, "AutomatedScienceSampler/AutomatedScienceSampler");
     }
     #endregion
     #region ui
     protected override void OnUIElemntInit(UIData uiWindow)
     {
       var prefabWindow = uiWindow.gameObject.transform as RectTransform;
-      var content = prefabWindow.FindChild("Content");
+      uiContent = prefabWindow.FindChild("Content");
+      UpdateUIVisuals();
 
-      InitInputField(content, "Threshold", settings.threshold.ToString(), OnThresholdChange);
-      InitToggle(content, "SingleRunExperiments", settings.oneTimeOnly, OnSingleRunExperimentsChange);
-      InitToggle(content, "ResetExperiments", settings.resetExperiments, OnResetExperimentsChange);
-      InitToggle(content, "HideScienceDialog", settings.hideScienceDialog, OnHideScienceDialogChange);
-      InitToggle(content, "TransferAllData", settings.transferAllData, OnTransferAllDataChange);
-      InitToggle(content, "DumpDuplicates", settings.dumpDuplicates, OnDumpDuplicatesChange);
-      InitToggle(content, "Debug", settings.debug, OnDebugChange);
-      InitSlider(content, "SpriteFPS", settings.spriteFPS, OnSpriteFPSChange);
-      transferScienceUIElement = InitDropdown(content, "TransferScience", OnTransferScienceChange);
+      InitToggle(uiContent, "Debug", settings.debug, OnDebugChange);
+      InitSlider(uiContent, "SpriteFPS", settings.spriteFPS, OnSpriteFPSChange);
+      transferScienceUIElement = InitDropdown(uiContent, "TransferScience", OnTransferScienceChange);
 
 
     }
 
+    private void UpdateUIVisuals()
+    {
+      if (craftSettings != null)
+      {
+        InitInputField(uiContent, "Threshold", craftSettings.threshold.ToString(), OnThresholdChange, true);
+        InitToggle(uiContent, "SingleRunExperiments", craftSettings.oneTimeOnly, OnSingleRunExperimentsChange, true);
+        InitToggle(uiContent, "ResetExperiments", craftSettings.resetExperiments, OnResetExperimentsChange, true);
+        InitToggle(uiContent, "HideScienceDialog", craftSettings.hideScienceDialog, OnHideScienceDialogChange, true);
+        InitToggle(uiContent, "TransferAllData", craftSettings.transferAllData, OnTransferAllDataChange, true);
+        InitToggle(uiContent, "DumpDuplicates", craftSettings.dumpDuplicates, OnDumpDuplicatesChange, true);
+      }
+    }
+
     private void OnDumpDuplicatesChange(bool arg0)
     {
-      settings.dumpDuplicates = arg0;
+      craftSettings.dumpDuplicates = arg0;
       settings.Save();
       Log("OnDumpDuplicatesChange");
     }
 
     private void OnTransferAllDataChange(bool arg0)
     {
-      settings.transferAllData = arg0;
+      craftSettings.transferAllData = arg0;
       settings.Save();
       Log("OnTransferAllDataChange");
     }
@@ -131,11 +166,11 @@ namespace KerboKatz.ASS
 
     private void OnTransferScienceChange(int arg0)
     {
-      currentSelectedContainer = arg0;
+      craftSettings.currentContainer = arg0;
       Log("OnTransferScienceChange ");
-      if (currentSelectedContainer != 0 && scienceContainers.Count >= currentSelectedContainer)
+      if (craftSettings.currentContainer != 0 && scienceContainers.Count >= craftSettings.currentContainer)
       {
-        StartCoroutine(DisableHighlight(0.25f, scienceContainers[currentSelectedContainer - 1].part));
+        StartCoroutine(DisableHighlight(0.25f, scienceContainers[craftSettings.currentContainer - 1].part));
       }
     }
 
@@ -155,33 +190,36 @@ namespace KerboKatz.ASS
 
     private void OnHideScienceDialogChange(bool arg0)
     {
-      settings.hideScienceDialog = arg0;
+      craftSettings.hideScienceDialog = arg0;
       settings.Save();
       Log("OnHideScienceDialog");
     }
 
     private void OnResetExperimentsChange(bool arg0)
     {
-      settings.resetExperiments = arg0;
+      craftSettings.resetExperiments = arg0;
       settings.Save();
       Log("OnResetExperimentsChange");
     }
 
     private void OnSingleRunExperimentsChange(bool arg0)
     {
-      settings.oneTimeOnly = arg0;
+      craftSettings.oneTimeOnly = arg0;
       settings.Save();
       Log("onSingleRunExperimentsChange");
     }
 
     private void OnThresholdChange(string arg0)
     {
-      settings.threshold = arg0.ToFloat();
+      craftSettings.threshold = arg0.ToFloat();
       settings.Save();
       Log("onThresholdChange");
     }
     private void OnToolbar()
     {
+      Log((craftSettings == null), " ", craftSettings.guid, " ", FlightGlobals.ActiveVessel.id);
+      if (craftSettings == null)
+        GetCraftSettings();
       if (Input.GetMouseButtonUp(1))
       {
         var uiData = GetUIData(settingsUIName);
@@ -199,10 +237,10 @@ namespace KerboKatz.ASS
       }
       else
       {
-        settings.runAutoScience = !settings.runAutoScience;
-        if (!settings.runAutoScience)
+        craftSettings.runAutoScience = !craftSettings.runAutoScience;
+        if (!craftSettings.runAutoScience)
         {
-          icon = AssetLoader.GetAsset<Sprite>("icon56", "Icons/AutomatedScienceSampler");//Utilities.GetTexture("icon56", "AutomatedScienceSampler/Textures");
+          icon = AssetLoader.GetAsset<Sprite>("icon56", "Icons/AutomatedScienceSampler", "AutomatedScienceSampler/AutomatedScienceSampler");//Utilities.GetTexture("icon56", "AutomatedScienceSampler/Textures");
         }
       }
       settings.Save();
@@ -211,15 +249,32 @@ namespace KerboKatz.ASS
 
     private void OnVesselChange(Vessel data)
     {
+      Log("OnVesselChange");
+      GetCraftSettings();
       UpdateShipInformation();
     }
-
+    private void GoingEva(GameEvents.FromToAction<Part, Part> parts)
+    {
+      Log("GoingEva");
+      parentVessel = parts.from.vessel;
+      nextUpdate = Planetarium.GetUniversalTime() + 1;
+    }
     void Update()
     {
-      //Debug.Log(transferScienceUIElement.options.Count);
-      if (!settings.runAutoScience)
-        return;
       if (!isReady)
+        return;
+      if (!FlightGlobals.ready)
+        return;
+      if (craftSettings == null)
+        GetCraftSettings();
+
+      if (!craftSettings.runAutoScience)
+        return;
+      if (FlightGlobals.ActiveVessel.packed)
+        return;
+      if (!FlightGlobals.ActiveVessel.IsControllable)
+        return;
+      if (!CheckEVA())
         return;
       #region icon
       if (lastFrameCheck + frameCheck < Time.time)
@@ -229,7 +284,7 @@ namespace KerboKatz.ASS
           CurrentFrame += frame;
         else
           CurrentFrame = 0;
-        icon = AssetLoader.GetAsset<Sprite>("icon" + (int)CurrentFrame, "Icons/AutomatedScienceSampler");//Utilities.GetTexture("icon" + (int)CurrentFrame, "ForScienceContinued/Textures");
+        icon = AssetLoader.GetAsset<Sprite>("icon" + (int)CurrentFrame, "Icons/AutomatedScienceSampler", "AutomatedScienceSampler/AutomatedScienceSampler");//Utilities.GetTexture("icon" + (int)CurrentFrame, "ForScienceContinued/Textures");
         lastFrameCheck = Time.time;
       }
 
@@ -251,8 +306,6 @@ namespace KerboKatz.ASS
         return;
       nextUpdate = Planetarium.GetUniversalTime() + 1;
       Log(sw.Elapsed.TotalMilliseconds);
-      //var experiments = FlightGlobals.ActiveVessel.FindPartModulesImplementing<ModuleScienceExperiment>();
-      Log(sw.Elapsed.TotalMilliseconds);
       foreach (var experiment in experiments)
       {
         IScienceActivator activator;
@@ -269,20 +322,48 @@ namespace KerboKatz.ASS
           activator.DeployExperiment(experiment);
           AddToContainer(subject.id);
         }
-        else if (currentSelectedContainer != 0 && currentSelectedContainer <= scienceContainers.Count && activator.CanTransfer(experiment, scienceContainers[currentSelectedContainer - 1]))
+        else if (BasicTransferCheck() && activator.CanTransfer(experiment, scienceContainers[craftSettings.currentContainer - 1]))
         {
-          activator.Transfer(experiment, scienceContainers[currentSelectedContainer - 1]);
+          activator.Transfer(experiment, scienceContainers[craftSettings.currentContainer - 1]);
         }
-        else if (settings.resetExperiments && activator.CanReset(experiment))
+        else if (craftSettings.resetExperiments && activator.CanReset(experiment))
         {
           activator.Reset(experiment);
         }
 
-        Log(sw.Elapsed.TotalMilliseconds);
+        Log("Experiment checked in: ", sw.Elapsed.TotalMilliseconds);
       }
       Log("Total: ", sw.Elapsed.TotalMilliseconds);
     }
 
+    private bool BasicTransferCheck()
+    {
+      if (craftSettings.currentContainer == 0)
+        return false;
+      if (craftSettings.currentContainer > scienceContainers.Count)
+        return false;
+      if (scienceContainers[craftSettings.currentContainer - 1].vessel != FlightGlobals.ActiveVessel)
+        return false;
+      return true;
+    }
+
+    private bool CheckEVA()
+    {
+      if (FlightGlobals.ActiveVessel.isEVA)
+      {
+        if (kerbalEVAPart == null)
+        {
+          var kerbalEVAParts = FlightGlobals.ActiveVessel.FindPartModulesImplementing<KerbalEVA>();
+          kerbalEVAPart = kerbalEVAParts.First();
+        }
+        if (craftSettings.doEVAOnlyIfGroundedWhenLanded && (parentVessel.Landed || parentVessel.Splashed) && (kerbalEVAPart.OnALadder || (!FlightGlobals.ActiveVessel.Landed && !FlightGlobals.ActiveVessel.Splashed)))
+        {
+          return false;
+        }
+      }
+
+      return true;
+    }
     private void UpdateShipInformation()
     {
       isReady = false;
@@ -302,6 +383,7 @@ namespace KerboKatz.ASS
           AddToContainer(data.subjectID);
         }
       }
+      transferScienceUIElement.value = craftSettings.currentContainer;
       isReady = true;
     }
 
