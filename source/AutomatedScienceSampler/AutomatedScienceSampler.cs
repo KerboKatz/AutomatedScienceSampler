@@ -23,8 +23,7 @@ namespace KerboKatz.ASS
     private float CurrentFrame;
     private float lastFrameCheck;
     private static List<GameScenes> _activeScences = new List<GameScenes>() { GameScenes.FLIGHT };
-    private Sprite _icon = AssetLoader.GetAsset<Sprite>("icon56", "Icons/AutomatedScienceSampler", "AutomatedScienceSampler/AutomatedScienceSampler");//Utilities.GetTexture("icon56", "AutomatedScienceSampler/Textures");
-    //private int currentSelectedContainer;
+    private Sprite _icon = AssetLoader.GetAsset<Sprite>("icon56", "Icons/AutomatedScienceSampler", "AutomatedScienceSampler/AutomatedScienceSampler");
     private List<ModuleScienceExperiment> experiments;
     private List<ModuleScienceContainer> scienceContainers;
     private Dropdown transferScienceUIElement;
@@ -43,7 +42,7 @@ namespace KerboKatz.ASS
       displayName = "Automated Science Sampler";
       settingsUIName = "AutomatedScienceSampler";
       tooltip = "Use left click to turn AutomatedScienceSampler on/off.\n Use shift+left click to open the settings menu.";
-      requiresUtilities = new Version(1, 3, 3);
+      requiresUtilities = new Version(1, 3, 4);
       ToolbarBase.instance.Add(this);
       LoadSettings("AutomatedScienceSampler", "Settings");
       Log("Init done!");
@@ -99,21 +98,27 @@ namespace KerboKatz.ASS
     private void GetCraftSettings()
     {
       string guid;
-      if (FlightGlobals.ActiveVessel.isEVA)
+      if (settings.perCraftSetting)
       {
-        if (parentVessel != null)
-          guid = parentVessel.id.ToString();
+        if (FlightGlobals.ActiveVessel.isEVA)
+        {
+          if (parentVessel != null)
+            guid = parentVessel.id.ToString();
+          else
+            guid = "EVA";
+        }
         else
-          guid = "EVA";
+        {
+          guid = FlightGlobals.ActiveVessel.id.ToString();
+        }
       }
       else
       {
-        guid = FlightGlobals.ActiveVessel.id.ToString();
+        guid = "Single";
       }
 
       craftSettings = settings.GetSettingsForCraft(guid);
       UpdateUIVisuals();
-      //LoadUI(settingsUIName, "AutomatedScienceSampler/AutomatedScienceSampler");
     }
     #endregion
     #region ui
@@ -123,6 +128,7 @@ namespace KerboKatz.ASS
       uiContent = prefabWindow.FindChild("Content");
       UpdateUIVisuals();
 
+      InitToggle(uiContent, "UsePerCraftSettings", settings.perCraftSetting, OnPerCraftSettingChange);
       InitToggle(uiContent, "Debug", settings.debug, OnDebugChange);
       InitSlider(uiContent, "SpriteFPS", settings.spriteFPS, OnSpriteFPSChange);
       transferScienceUIElement = InitDropdown(uiContent, "TransferScience", OnTransferScienceChange);
@@ -146,21 +152,21 @@ namespace KerboKatz.ASS
     private void OnDumpDuplicatesChange(bool arg0)
     {
       craftSettings.dumpDuplicates = arg0;
-      settings.Save();
+      SaveSettings();
       Log("OnDumpDuplicatesChange");
     }
 
     private void OnTransferAllDataChange(bool arg0)
     {
       craftSettings.transferAllData = arg0;
-      settings.Save();
+      SaveSettings();
       Log("OnTransferAllDataChange");
     }
 
     private void OnSpriteFPSChange(float arg0)
     {
       settings.spriteFPS = arg0;
-      settings.Save();
+      SaveSettings();
       Log("OnSpriteFPSChange");
     }
 
@@ -172,6 +178,7 @@ namespace KerboKatz.ASS
       {
         StartCoroutine(DisableHighlight(0.25f, scienceContainers[craftSettings.currentContainer - 1].part));
       }
+      SaveSettings();
     }
 
     private IEnumerator DisableHighlight(float time, Part part)
@@ -181,38 +188,46 @@ namespace KerboKatz.ASS
       part.SetHighlight(false, false);
     }
 
+
+    private void OnPerCraftSettingChange(bool arg0)
+    {
+      settings.perCraftSetting = arg0;
+      SaveSettings();
+      GetCraftSettings();
+      Log("OnPerCraftSettingChange");
+    }
     private void OnDebugChange(bool arg0)
     {
       settings.debug = arg0;
-      settings.Save();
+      SaveSettings();
       Log("OnDebugChange");
     }
 
     private void OnHideScienceDialogChange(bool arg0)
     {
       craftSettings.hideScienceDialog = arg0;
-      settings.Save();
+      SaveSettings();
       Log("OnHideScienceDialog");
     }
 
     private void OnResetExperimentsChange(bool arg0)
     {
       craftSettings.resetExperiments = arg0;
-      settings.Save();
+      SaveSettings();
       Log("OnResetExperimentsChange");
     }
 
     private void OnSingleRunExperimentsChange(bool arg0)
     {
       craftSettings.oneTimeOnly = arg0;
-      settings.Save();
+      SaveSettings();
       Log("onSingleRunExperimentsChange");
     }
 
     private void OnThresholdChange(string arg0)
     {
       craftSettings.threshold = arg0.ToFloat();
-      settings.Save();
+      SaveSettings();
       Log("onThresholdChange");
     }
     private void OnToolbar()
@@ -243,7 +258,7 @@ namespace KerboKatz.ASS
           icon = AssetLoader.GetAsset<Sprite>("icon56", "Icons/AutomatedScienceSampler", "AutomatedScienceSampler/AutomatedScienceSampler");//Utilities.GetTexture("icon56", "AutomatedScienceSampler/Textures");
         }
       }
-      settings.Save();
+      SaveSettings();
     }
     #endregion
 

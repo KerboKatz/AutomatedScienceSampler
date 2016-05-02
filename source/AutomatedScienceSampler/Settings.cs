@@ -1,4 +1,5 @@
-﻿using System;
+﻿using KerboKatz.UI;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,6 +14,9 @@ namespace KerboKatz.ASS
     public float spriteFPS = 60;
     private Dictionary<string, PerCraftSetting> _craftSettings = new Dictionary<string, PerCraftSetting>();
     public List<PerCraftSetting> craftSettings = new List<PerCraftSetting>();
+    public bool perCraftSetting;
+    public string lastGUID;
+
     protected override void OnLoaded()
     {
       _craftSettings.Clear();
@@ -31,10 +35,18 @@ namespace KerboKatz.ASS
       PerCraftSetting setting;
       if (!_craftSettings.TryGetValue(guid, out setting))
       {
-        setting = new PerCraftSetting();
+        if (lastGUID.IsNullOrWhiteSpace())
+        {
+          setting = new PerCraftSetting();
+        }
+        else
+        {
+          setting = GetSettingsForCraft(lastGUID).Clone();
+        }
         setting.guid = guid;
         _craftSettings.Add(guid, setting);
       }
+      lastGUID = guid;
       return setting;
     }
   }
