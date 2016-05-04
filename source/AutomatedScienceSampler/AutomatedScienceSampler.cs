@@ -42,7 +42,7 @@ namespace KerboKatz.ASS
       displayName = "Automated Science Sampler";
       settingsUIName = "AutomatedScienceSampler";
       tooltip = "Use left click to turn AutomatedScienceSampler on/off.\n Use shift+left click to open the settings menu.";
-      requiresUtilities = new Version(1, 3, 4);
+      requiresUtilities = new Version(1, 3, 6);
       ToolbarBase.instance.Add(this);
       LoadSettings("AutomatedScienceSampler", "Settings");
       Log("Init done!");
@@ -61,6 +61,7 @@ namespace KerboKatz.ASS
       LoadUI(settingsUIName, "AutomatedScienceSampler/AutomatedScienceSampler");
 
       GameEvents.onVesselChange.Add(OnVesselChange);
+      GameEvents.onVesselWasModified.Add(OnVesselChange);
       GameEvents.onCrewOnEva.Add(GoingEva);
       Log("Awake");
     }
@@ -90,6 +91,7 @@ namespace KerboKatz.ASS
     protected override void AfterDestroy()
     {
       GameEvents.onVesselChange.Remove(OnVesselChange);
+      GameEvents.onVesselWasModified.Remove(OnVesselChange);
       GameEvents.onCrewOnEva.Remove(GoingEva);
       ToolbarBase.instance.Remove(this);
       Log("AfterDestroy");
@@ -443,7 +445,7 @@ namespace KerboKatz.ASS
         if (_icon != value)
         {
           _icon = value;
-          ToolbarBase.UpdateIcon();
+          ToolbarBase.UpdateIcon(modName, icon);
         }
       }
     }
