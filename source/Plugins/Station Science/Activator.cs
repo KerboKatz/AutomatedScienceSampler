@@ -1,11 +1,12 @@
-﻿using System;
+﻿using StationScience;
+using System;
 using System.Collections.Generic;
 
 namespace KerboKatz.ASS
 {
-  internal class DefaultActivator : IScienceActivator
+  internal class Activator : IScienceActivator
   {
-    internal static DefaultActivator instance;
+    internal static Activator instance;
     private AutomatedScienceSampler _AutomatedScienceSamplerInstance;
 
     AutomatedScienceSampler IScienceActivator.AutomatedScienceSampler
@@ -16,35 +17,52 @@ namespace KerboKatz.ASS
 
     public bool CanRunExperiment(ModuleScienceExperiment baseExperiment, float currentScienceValue)
     {
-      if (!baseExperiment.experiment.IsAvailableWhile(ScienceUtil.GetExperimentSituation(FlightGlobals.ActiveVessel), FlightGlobals.currentMainBody))//
+      var currentExperiment = baseExperiment as StationExperiment;
+      var isActive = currentExperiment.Events["StartExperiment"].active;
+      if (isActive)
       {
-        _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": Experiment isn't available in the current situation: ", ScienceUtil.GetExperimentSituation(FlightGlobals.ActiveVessel), "_", FlightGlobals.currentMainBody + "_", baseExperiment.experiment.situationMask);
+        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": StationExperiment didn't start yet! You might want to start it manually!");
         return false;
       }
-      if (baseExperiment.Inoperable)
+      if (StationExperiment.checkBoring(FlightGlobals.ActiveVessel, false))
       {
-        _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": Experiment is inoperable");
+        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": StationExperiment says this location is boring!");
         return false;
       }
-      if (baseExperiment.Deployed)
+      if(!currentExperiment.finished() && !isActive)
       {
-        _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": Experiment is deployed");
+        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": StationExperiment isn't finished yet!");
+        return false;
+      }
+      if (!currentExperiment.experiment.IsAvailableWhile(ScienceUtil.GetExperimentSituation(FlightGlobals.ActiveVessel), FlightGlobals.currentMainBody))//
+      {
+        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment isn't available in the current situation: ", ScienceUtil.GetExperimentSituation(FlightGlobals.ActiveVessel), "_", FlightGlobals.currentMainBody + "_", currentExperiment.experiment.situationMask);
+        return false;
+      }
+      if (currentExperiment.Inoperable)
+      {
+        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment is inoperable");
+        return false;
+      }
+      if (currentExperiment.Deployed)
+      {
+        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment is deployed");
         return false;
       }
 
-      if (!baseExperiment.rerunnable && !_AutomatedScienceSamplerInstance.craftSettings.oneTimeOnly)
+      if (!currentExperiment.rerunnable && !_AutomatedScienceSamplerInstance.craftSettings.oneTimeOnly)
       {
-        _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": Runing rerunable experiments is disabled");
+        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Runing rerunable experiments is disabled");
         return false;
       }
       if (currentScienceValue < _AutomatedScienceSamplerInstance.craftSettings.threshold)
       {
-        _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": Science value is less than cutoff threshold: ", currentScienceValue, "<", _AutomatedScienceSamplerInstance.craftSettings.threshold);
+        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Science value is less than cutoff threshold: ", currentScienceValue, "<", _AutomatedScienceSamplerInstance.craftSettings.threshold);
         return false;
       }
-      if (!baseExperiment.experiment.IsUnlocked())
+      if (!currentExperiment.experiment.IsUnlocked())
       {
-        _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": Experiment is locked");
+        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment is locked");
         return false;
       }
       return true;
@@ -52,16 +70,17 @@ namespace KerboKatz.ASS
 
     public void DeployExperiment(ModuleScienceExperiment baseExperiment)
     {
+      var currentExperiment = baseExperiment as StationExperiment;
       if (_AutomatedScienceSamplerInstance.craftSettings.hideScienceDialog)
       {
-        var stagingSetting = baseExperiment.useStaging;
-        baseExperiment.useStaging = true;//work the way around the staging
-        baseExperiment.OnActive();//run the experiment without causing the report to show up
-        baseExperiment.useStaging = stagingSetting;//set the staging back
+        var stagingSetting = currentExperiment.useStaging;
+        currentExperiment.useStaging = true;//work the way around the staging
+        currentExperiment.OnActive();//run the experiment without causing the report to show up
+        currentExperiment.useStaging = stagingSetting;//set the staging back
       }
       else
       {
-        baseExperiment.DeployExperiment();
+        currentExperiment.DeployExperiment();
       }
     }
 
@@ -183,11 +202,19 @@ namespace KerboKatz.ASS
       }
       return string.Empty;
     }
-
+    
     public List<Type> GetValidTypes()
     {
       var types = new List<Type>();
-      types.Add(typeof(ModuleScienceExperiment));
+      types.Add(typeof(StationExperiment));
+
+      Utilities.LoopTroughAssemblies((type) =>
+      {
+        if (type.IsClass && !type.IsAbstract && type.IsSubclassOf(typeof(StationExperiment)))
+        {
+          types.Add(type);
+        }
+      });
       return types;
     }
   }
