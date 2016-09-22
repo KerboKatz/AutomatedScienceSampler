@@ -1,13 +1,10 @@
 ﻿using KerboKatz.Assets;
 using KerboKatz.Extensions;
 using KerboKatz.Toolbar;
-using KSP.UI;
-using KSP.UI.Screens;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -27,15 +24,17 @@ namespace KerboKatz.ASS
     private List<ModuleScienceExperiment> experiments;
     private List<ModuleScienceContainer> scienceContainers;
     private Dropdown transferScienceUIElement;
-    private bool isReady;
-    string settingsUIName;
+    private bool uiElementsReady;
+    private string settingsUIName;
     private KerbalEVA kerbalEVAPart;
     private Vessel parentVessel;
     public PerCraftSetting craftSettings;
     private Transform uiContent;
 
     private float frameCheck { get { return 1 / settings.spriteFPS; } }
+
     #region init/destroy
+
     public AutomatedScienceSampler()
     {
       modName = "AutomatedScienceSampler";
@@ -47,7 +46,6 @@ namespace KerboKatz.ASS
       LoadSettings("AutomatedScienceSampler", "Settings");
       Log("Init done!");
     }
-
 
     public override void OnAwake()
     {
@@ -65,6 +63,7 @@ namespace KerboKatz.ASS
       GameEvents.onCrewOnEva.Add(GoingEva);
       Log("Awake");
     }
+
     private void GetScienceActivators()
     {
       Log("Starting search");
@@ -122,20 +121,21 @@ namespace KerboKatz.ASS
       craftSettings = settings.GetSettingsForCraft(guid);
       UpdateUIVisuals();
     }
-    #endregion
+
+    #endregion init/destroy
+
     #region ui
+
     protected override void OnUIElemntInit(UIData uiWindow)
     {
       var prefabWindow = uiWindow.gameObject.transform as RectTransform;
       uiContent = prefabWindow.FindChild("Content");
       UpdateUIVisuals();
-
+      InitToggle(uiContent, "DropOutOfWarp", settings.dropOutOfWarp, OnDropOutOfWarpChange);
       InitToggle(uiContent, "UsePerCraftSettings", settings.perCraftSetting, OnPerCraftSettingChange);
       InitToggle(uiContent, "Debug", settings.debug, OnDebugChange);
       InitSlider(uiContent, "SpriteFPS", settings.spriteFPS, OnSpriteFPSChange);
       transferScienceUIElement = InitDropdown(uiContent, "TransferScience", OnTransferScienceChange);
-
-
     }
 
     private void UpdateUIVisuals()
@@ -151,6 +151,12 @@ namespace KerboKatz.ASS
       }
     }
 
+
+    private void OnDropOutOfWarpChange(bool arg0)
+    {
+      settings.dropOutOfWarp = arg0;
+      SaveSettings();
+    }
     private void OnDumpDuplicatesChange(bool arg0)
     {
       craftSettings.dumpDuplicates = arg0;
@@ -190,7 +196,6 @@ namespace KerboKatz.ASS
       part.SetHighlight(false, false);
     }
 
-
     private void OnPerCraftSettingChange(bool arg0)
     {
       settings.perCraftSetting = arg0;
@@ -198,6 +203,7 @@ namespace KerboKatz.ASS
       GetCraftSettings();
       Log("OnPerCraftSettingChange");
     }
+
     private void OnDebugChange(bool arg0)
     {
       settings.debug = arg0;
@@ -232,6 +238,7 @@ namespace KerboKatz.ASS
       SaveSettings();
       Log("onThresholdChange");
     }
+
     private void OnToolbar()
     {
       Log((craftSettings == null), " ", craftSettings.guid, " ", FlightGlobals.ActiveVessel.id);
@@ -262,7 +269,8 @@ namespace KerboKatz.ASS
       }
       SaveSettings();
     }
-    #endregion
+
+    #endregion ui
 
     private void OnVesselChange(Vessel data)
     {
@@ -270,31 +278,19 @@ namespace KerboKatz.ASS
       GetCraftSettings();
       UpdateShipInformation();
     }
+
     private void GoingEva(GameEvents.FromToAction<Part, Part> parts)
     {
       Log("GoingEva");
       parentVessel = parts.from.vessel;
-      nextUpdate = Planetarium.GetUniversalTime() + 1;
+      nextUpdate = Planetarium.GetUniversalTime() + settings.refreshTime;
     }
-    void Update()
-    {
-      if (!isReady)
-        return;
-      if (!FlightGlobals.ready)
-        return;
-      if (craftSettings == null)
-        GetCraftSettings();
 
-      if (!craftSettings.runAutoScience)
-        return;
-      if (FlightGlobals.ActiveVessel.packed)
-        return;
-      if (!FlightGlobals.ActiveVessel.IsControllable)
-        return;
-      if (!CheckEVA())
-        return;
+    private void Update()
+    {
       #region icon
-      if (lastFrameCheck + frameCheck < Time.time)
+
+      if (lastFrameCheck + frameCheck < Time.time && craftSettings.runAutoScience)
       {
         var frame = Time.deltaTime / frameCheck;
         if (CurrentFrame + frame < 55)
@@ -305,14 +301,28 @@ namespace KerboKatz.ASS
         lastFrameCheck = Time.time;
       }
 
-      #endregion
+      #endregion icon
+
+      var isTimeWarping = IsTimeWarping();
+      if (!IsReady())
+      {
+        return;
+      }
+      if (isTimeWarping)
+      {
+        if (!settings.interruptTimeWarp)
+        {
+          Log("waiting for next frame");
+          return;
+        }
+      }
       var sw = new System.Diagnostics.Stopwatch();
       sw.Start();
       if (nextUpdate == 0)
       {//add some delay so it doesnt run as soon as the vehicle launches
         if (!FlightGlobals.ready)
           return;
-        nextUpdate = Planetarium.GetUniversalTime() + 1;
+        nextUpdate = Planetarium.GetUniversalTime() + settings.refreshTime;
         UpdateShipInformation();
         return;
       }
@@ -321,7 +331,8 @@ namespace KerboKatz.ASS
         return;
       if (Planetarium.GetUniversalTime() < nextUpdate)
         return;
-      nextUpdate = Planetarium.GetUniversalTime() + 1;
+      nextUpdate = Planetarium.GetUniversalTime() + settings.refreshTime;
+
       Log(sw.Elapsed.TotalMilliseconds);
       foreach (var experiment in experiments)
       {
@@ -332,25 +343,119 @@ namespace KerboKatz.ASS
           activator = DefaultActivator.instance;
         }
         var subject = activator.GetScienceSubject(experiment);
+        if (subject == null)
+        {
+          Log("Subject is null! Skipping.");
+          continue;
+        }
         var value = activator.GetScienceValue(experiment, shipCotainsExperiments, subject);
-        if (activator.CanRunExperiment(experiment, value))
+        if (!isTimeWarping)
         {
-          Log("Deploying ", experiment.part.name, " for :", value, " science! ", subject.id);
-          activator.DeployExperiment(experiment);
-          AddToContainer(subject.id);
+          CheckExperimentOptions(experiment, activator, subject, value);
         }
-        else if (BasicTransferCheck() && activator.CanTransfer(experiment, scienceContainers[craftSettings.currentContainer - 1]))
+        else
         {
-          activator.Transfer(experiment, scienceContainers[craftSettings.currentContainer - 1]);
-        }
-        else if (craftSettings.resetExperiments && activator.CanReset(experiment))
-        {
-          activator.Reset(experiment);
+          if (settings.dropOutOfWarp)
+          {
+            if (CheckExitTimeWarp(experiment, activator, subject, value))
+            {
+              TimeWarp.SetRate(0, true);
+              break;
+            }
+          }
         }
 
         Log("Experiment checked in: ", sw.Elapsed.TotalMilliseconds);
       }
       Log("Total: ", sw.Elapsed.TotalMilliseconds);
+    }
+
+    private static bool IsTimeWarping()
+    {
+      return TimeWarp.CurrentRateIndex > 0;
+    }
+
+    private bool CheckExitTimeWarp(ModuleScienceExperiment experiment, IScienceActivator activator, ScienceSubject subject, float value)
+    {
+      if (CanRunExperiment(experiment, activator, value))
+      {
+        Log("exiting timewarp");
+        return true;
+      }
+      return false;
+    }
+
+    private void CheckExperimentOptions(ModuleScienceExperiment experiment, IScienceActivator activator, ScienceSubject subject, float value)
+    {
+      if (CanRunExperiment(experiment, activator, value))
+      {
+        Log("Deploying ", experiment.part.name, " for :", value, " science! ", subject.id);
+        activator.DeployExperiment(experiment);
+        AddToContainer(subject.id);
+      }
+      else if (CanTransferExperiment(experiment, activator))
+      {
+        activator.Transfer(experiment, scienceContainers[craftSettings.currentContainer - 1]);
+      }
+      else if (CanResetExperiment(experiment, activator))
+      {
+        activator.Reset(experiment);
+      }
+    }
+
+    private static bool CanRunExperiment(ModuleScienceExperiment experiment, IScienceActivator activator, float value)
+    {
+      return activator.CanRunExperiment(experiment, value);
+    }
+
+    private bool CanTransferExperiment(ModuleScienceExperiment experiment, IScienceActivator activator)
+    {
+      return BasicTransferCheck() && activator.CanTransfer(experiment, scienceContainers[craftSettings.currentContainer - 1]);
+    }
+
+    private bool CanResetExperiment(ModuleScienceExperiment experiment, IScienceActivator activator)
+    {
+      return craftSettings.resetExperiments && activator.CanReset(experiment);
+    }
+
+    private bool IsReady()
+    {
+      if (!uiElementsReady)
+      {
+        Log("UIElements aren't ready");
+        return false;
+      }
+      if (!FlightGlobals.ready)
+      {
+        Log("FlightGlobals aren't ready");
+        return false;
+      }
+      if (craftSettings == null)
+        GetCraftSettings();
+
+      if (!craftSettings.runAutoScience)
+      {
+        Log("AutoScience is off");
+        return false;
+      }
+      if (FlightGlobals.ActiveVessel.packed)
+      {
+        Log("Vessel is packed");
+        if (!settings.interruptTimeWarp)
+          return false;
+        Log("But we want to check if we have experiments to run!");
+      }
+      if (!FlightGlobals.ActiveVessel.IsControllable)
+      {
+        Log("Vessel isn't controllable");
+        return false;
+      }
+      if (!CheckEVA())
+      {
+        Log("EVA isn't ready");
+        return false;
+      }
+      return true;
     }
 
     private bool BasicTransferCheck()
@@ -381,9 +486,10 @@ namespace KerboKatz.ASS
 
       return true;
     }
+
     private void UpdateShipInformation()
     {
-      isReady = false;
+      uiElementsReady = false;
 
       while (transferScienceUIElement.options.Count > 1)
       {
@@ -401,7 +507,7 @@ namespace KerboKatz.ASS
         }
       }
       transferScienceUIElement.value = craftSettings.currentContainer;
-      isReady = true;
+      uiElementsReady = true;
     }
 
     private void AddToContainer(string subjectID, int add = 0)
@@ -417,7 +523,9 @@ namespace KerboKatz.ASS
         shipCotainsExperiments.Add(subjectID, add + 1);
       }
     }
+
     #region IToolbar
+
     public List<GameScenes> activeScences
     {
       get
@@ -450,6 +558,6 @@ namespace KerboKatz.ASS
       }
     }
 
-    #endregion
+    #endregion IToolbar
   }
 }

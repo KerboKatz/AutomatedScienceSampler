@@ -4,11 +4,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("AutomatedScienceSampler - Station Science plugin")]
+[assembly: AssemblyTitle("AutomatedScienceSampler - DMModuleScienceAnimateGeneric Plugin")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("KerboKatz")]
-[assembly: AssemblyProduct("AutomatedScienceSampler - Station Science plugin")]
+[assembly: AssemblyProduct("AutomatedScienceSampler - DMModuleScienceAnimateGeneric Plugin")]
 [assembly: AssemblyCopyright("")]
 [assembly: AssemblyTrademark("KerboKatz")]
 [assembly: AssemblyCulture("")]
@@ -19,7 +19,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("7dc5e719-8a85-4bfd-b27b-7f95e99849e5")]
+[assembly: Guid("7480b6b1-155b-4457-9bc2-23184cefb70a")]
 
 // Version information for an assembly consists of the following four values:
 //

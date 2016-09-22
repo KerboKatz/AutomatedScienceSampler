@@ -1,9 +1,8 @@
-﻿using DMagic;
-using DMagic.Part_Modules;
+﻿using DMModuleScienceAnimateGeneric;
 using System;
 using System.Collections.Generic;
 
-namespace KerboKatz.ASS.DMOS
+namespace KerboKatz.ASS.DMMSAG
 {
   public class Activator : IScienceActivator
   {
@@ -17,7 +16,7 @@ namespace KerboKatz.ASS.DMOS
 
     public bool CanRunExperiment(ModuleScienceExperiment baseExperiment, float currentScienceValue)
     {
-      var currentExperiment = baseExperiment as DMModuleScienceAnimate;
+      var currentExperiment = baseExperiment as DMModuleScienceAnimateGeneric.DMModuleScienceAnimateGeneric;
       if (currentScienceValue < _AutomatedScienceSamplerInstance.craftSettings.threshold)
       {
         _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Science value is less than cutoff threshold: ", currentScienceValue, "<", _AutomatedScienceSamplerInstance.craftSettings.threshold);
@@ -43,65 +42,41 @@ namespace KerboKatz.ASS.DMOS
         _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment is locked");
         return false;
       }
-      if (!string.IsNullOrEmpty(currentExperiment.animationName))
-      {
-        var anim = currentExperiment.part.FindModelAnimators(currentExperiment.animationName)[0];
-        if (anim.isPlaying)
-        {
-          _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Animation is playing");
-          return false;
-        }
-      }
-      return DMAPI.experimentCanConduct(currentExperiment);
+      return currentExperiment.canConduct();
     }
 
     public void DeployExperiment(ModuleScienceExperiment baseExperiment)
     {
-      var currentExperiment = baseExperiment as DMModuleScienceAnimate;
-      DMAPI.deployDMExperiment(currentExperiment, _AutomatedScienceSamplerInstance.craftSettings.hideScienceDialog);
+      var currentExperiment = baseExperiment as DMModuleScienceAnimateGeneric.DMModuleScienceAnimateGeneric;
+      currentExperiment.gatherScienceData(_AutomatedScienceSamplerInstance.craftSettings.hideScienceDialog);
     }
 
     public ScienceSubject GetScienceSubject(ModuleScienceExperiment baseExperiment)
     {
-      var currentExperiment = baseExperiment as DMModuleScienceAnimate;
-      if (DMAPI.isAsteroidGrappled(baseExperiment))
+      var currentExperiment = baseExperiment as DMModuleScienceAnimateGeneric.DMModuleScienceAnimateGeneric;
+      if (DMSciAnimAPI.isAsteroidGrappled(currentExperiment))
       {
-        return DMAPI.getAsteroidSubject(currentExperiment);
+        return DMSciAnimAPI.getAsteroidSubject(currentExperiment);
       }
       else
       {
         ExperimentSituations situation = ScienceUtil.GetExperimentSituation(FlightGlobals.ActiveVessel);
-        var biome = DMAPI.getBiome(baseExperiment, situation);
-        if (biome == null)
-        {
-          _AutomatedScienceSamplerInstance.Log("Biome is null.");
-          return null;
-        }
-        //_AutomatedScienceSamplerInstance.Log(ResearchAndDevelopment.GetExperiment(currentExperiment.experimentID) == null, FlightGlobals.currentMainBody == null, biome == null);
-        var scienceSubject = ResearchAndDevelopment.GetExperimentSubject(ResearchAndDevelopment.GetExperiment(currentExperiment.experimentID), situation, FlightGlobals.currentMainBody, biome);
-        _AutomatedScienceSamplerInstance.Log(biome, "_", situation, "_", scienceSubject == null);
-        return scienceSubject;
+        var biome = currentExperiment.getBiome(situation);
+        _AutomatedScienceSamplerInstance.Log(biome, "_", situation, "_", ResearchAndDevelopment.GetExperimentSubject(ResearchAndDevelopment.GetExperiment(currentExperiment.experimentID), situation, FlightGlobals.currentMainBody, biome) == null);
+        return ResearchAndDevelopment.GetExperimentSubject(ResearchAndDevelopment.GetExperiment(currentExperiment.experimentID), situation, FlightGlobals.currentMainBody, biome);
       }
     }
 
     public float GetScienceValue(ModuleScienceExperiment baseExperiment, Dictionary<string, int> shipCotainsExperiments, ScienceSubject currentScienceSubject)
     {
-      var currentExperiment = baseExperiment as DMModuleScienceAnimate;
+      var currentExperiment = baseExperiment as DMModuleScienceAnimateGeneric.DMModuleScienceAnimateGeneric;
       var scienceExperiment = ResearchAndDevelopment.GetExperiment(baseExperiment.experimentID);
-      return Utilities.Science.GetScienceValue(shipCotainsExperiments, scienceExperiment, currentScienceSubject) * currentExperiment.totalScienceLevel;
-      /*if (DMAPI.isAsteroidGrappled(currentExperiment))
-      {
-        return Utilities.Science.GetScienceValue(shipCotainsExperiments, scienceExperiment, currentScienceSubject, null, GetNextScienceValue);
-      }
-      else
-      {
-        return Utilities.Science.GetScienceValue(shipCotainsExperiments, scienceExperiment, currentScienceSubject);
-      }*/
+      return Utilities.Science.GetScienceValue(shipCotainsExperiments, scienceExperiment, currentScienceSubject);
     }
 
     public bool CanReset(ModuleScienceExperiment baseExperiment)
     {
-      var currentExperiment = baseExperiment as DMModuleScienceAnimate;
+      var currentExperiment = baseExperiment as DMModuleScienceAnimateGeneric.DMModuleScienceAnimateGeneric;
       if (!currentExperiment.Inoperable)
       {
         _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment isn't inoperable");
@@ -141,17 +116,17 @@ namespace KerboKatz.ASS.DMOS
 
     public void Reset(ModuleScienceExperiment baseExperiment)
     {
-      var currentExperiment = baseExperiment as DMModuleScienceAnimate;
+      var currentExperiment = baseExperiment as DMModuleScienceAnimateGeneric.DMModuleScienceAnimateGeneric;
       _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Reseting experiment");
       currentExperiment.ResetExperiment();
     }
 
     public bool CanTransfer(ModuleScienceExperiment baseExperiment, ModuleScienceContainer moduleScienceContainer)
     {
-      var currentExperiment = baseExperiment as DMModuleScienceAnimate;
+      var currentExperiment = baseExperiment as DMModuleScienceAnimateGeneric.DMModuleScienceAnimateGeneric;
       if ((currentExperiment as IScienceDataContainer).GetScienceCount() == 0)
       {
-        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment has no data skiping transfer. Data found: ", (currentExperiment as IScienceDataContainer).GetScienceCount(), "_", currentExperiment.experimentNumber);
+        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment has no data skiping transfer. Data found: ", (currentExperiment as IScienceDataContainer).GetScienceCount());
         return false;
       }
       if (!currentExperiment.IsRerunnable())
@@ -179,19 +154,19 @@ namespace KerboKatz.ASS.DMOS
 
     public void Transfer(ModuleScienceExperiment baseExperiment, ModuleScienceContainer moduleScienceContainer)
     {
-      var currentExperiment = baseExperiment as DMModuleScienceAnimate;
+      var currentExperiment = baseExperiment as DMModuleScienceAnimateGeneric.DMModuleScienceAnimateGeneric;
       _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": transfering");
-      moduleScienceContainer.StoreData(new List<IScienceDataContainer>() { currentExperiment as DMModuleScienceAnimate }, _AutomatedScienceSamplerInstance.craftSettings.dumpDuplicates);
+      moduleScienceContainer.StoreData(new List<IScienceDataContainer>() { currentExperiment as DMModuleScienceAnimateGeneric.DMModuleScienceAnimateGeneric }, _AutomatedScienceSamplerInstance.craftSettings.dumpDuplicates);
     }
 
     public List<Type> GetValidTypes()
     {
       var types = new List<Type>();
-      types.Add(typeof(DMModuleScienceAnimate));
+      types.Add(typeof(DMModuleScienceAnimateGeneric.DMModuleScienceAnimateGeneric));
 
       Utilities.LoopTroughAssemblies((type) =>
       {
-        if (type.IsClass && !type.IsAbstract && type.IsSubclassOf(typeof(DMModuleScienceAnimate)))
+        if (type.IsClass && !type.IsAbstract && type.IsSubclassOf(typeof(DMModuleScienceAnimateGeneric.DMModuleScienceAnimateGeneric)))
         {
           types.Add(type);
         }

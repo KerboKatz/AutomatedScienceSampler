@@ -2,11 +2,10 @@
 using System;
 using System.Collections.Generic;
 
-namespace KerboKatz.ASS
+namespace KerboKatz.ASS.SS
 {
   internal class Activator : IScienceActivator
   {
-    internal static Activator instance;
     private AutomatedScienceSampler _AutomatedScienceSamplerInstance;
 
     AutomatedScienceSampler IScienceActivator.AutomatedScienceSampler
@@ -29,7 +28,7 @@ namespace KerboKatz.ASS
         _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": StationExperiment says this location is boring!");
         return false;
       }
-      if(!currentExperiment.finished() && !isActive)
+      if (!currentExperiment.finished() && !isActive)
       {
         _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": StationExperiment isn't finished yet!");
         return false;
@@ -202,7 +201,7 @@ namespace KerboKatz.ASS
       }
       return string.Empty;
     }
-    
+
     public List<Type> GetValidTypes()
     {
       var types = new List<Type>();

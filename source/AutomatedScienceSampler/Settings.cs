@@ -1,10 +1,5 @@
 ﻿using KerboKatz.UI;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Xml.Serialization;
-using UnityEngine;
 
 namespace KerboKatz.ASS
 {
@@ -16,6 +11,9 @@ namespace KerboKatz.ASS
     public List<PerCraftSetting> craftSettings = new List<PerCraftSetting>();
     public bool perCraftSetting;
     public string lastGUID;
+    public double refreshTime = 1;
+    public bool interruptTimeWarp = true;
+    public bool dropOutOfWarp = false;
 
     protected override void OnLoaded()
     {
@@ -25,6 +23,7 @@ namespace KerboKatz.ASS
         _craftSettings.Add(setting.guid, setting);
       }
     }
+
     protected override void OnSave()
     {
       craftSettings = new List<PerCraftSetting>(_craftSettings.Values);
@@ -50,6 +49,7 @@ namespace KerboKatz.ASS
       return setting;
     }
   }
+
   public class PerCraftSetting
   {
     public string guid;
