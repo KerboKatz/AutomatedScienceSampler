@@ -167,6 +167,10 @@ namespace KerboKatz.ASS
       var currentBody = FlightGlobals.currentMainBody;
       if (currentVessel != null && currentBody != null)
       {
+        if (currentVessel.isEVA)
+        {
+          currentVessel = currentVessel.EVALadderVessel;
+        }
         if (!string.IsNullOrEmpty(currentVessel.landedAt))
         {
           //big thanks to xEvilReeperx for this one.

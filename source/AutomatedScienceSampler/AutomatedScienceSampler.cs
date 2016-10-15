@@ -395,6 +395,7 @@ namespace KerboKatz.ASS
       }
       else if (CanTransferExperiment(experiment, activator))
       {
+        
         activator.Transfer(experiment, scienceContainers[craftSettings.currentContainer - 1]);
       }
       else if (CanResetExperiment(experiment, activator))
