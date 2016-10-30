@@ -14,6 +14,7 @@ namespace KerboKatz.ASS
     public double refreshTime = 1;
     public bool interruptTimeWarp = true;
     public bool dropOutOfWarp = false;
+    public bool useKKToolbar;
 
     protected override void OnLoaded()
     {

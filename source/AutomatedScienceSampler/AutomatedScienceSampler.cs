@@ -41,7 +41,7 @@ namespace KerboKatz.ASS
       displayName = "Automated Science Sampler";
       settingsUIName = "AutomatedScienceSampler";
       tooltip = "Use left click to turn AutomatedScienceSampler on/off.\n Use shift+left click to open the settings menu.";
-      requiresUtilities = new Version(1, 4, 0);
+      requiresUtilities = new Version(1, 4, 6);
       ToolbarBase.instance.Add(this);
       LoadSettings("AutomatedScienceSampler", "Settings");
       Log("Init done!");
@@ -134,6 +134,7 @@ namespace KerboKatz.ASS
       InitToggle(uiContent, "DropOutOfWarp", settings.dropOutOfWarp, OnDropOutOfWarpChange);
       InitToggle(uiContent, "UsePerCraftSettings", settings.perCraftSetting, OnPerCraftSettingChange);
       InitToggle(uiContent, "Debug", settings.debug, OnDebugChange);
+      InitToggle(uiContent, "UseKKToolbar", settings.useKKToolbar, OnToolbarChange);
       InitSlider(uiContent, "SpriteFPS", settings.spriteFPS, OnSpriteFPSChange);
       transferScienceUIElement = InitDropdown(uiContent, "TransferScience", OnTransferScienceChange);
     }
@@ -209,6 +210,17 @@ namespace KerboKatz.ASS
       settings.debug = arg0;
       SaveSettings();
       Log("OnDebugChange");
+    }
+
+    private void OnToolbarChange(bool arg0)
+    {
+      if (settings.useKKToolbar != arg0)
+      {
+        settings.useKKToolbar = arg0;
+        SaveSettings();
+        ToolbarBase.SetDirty();
+      }
+      Log("OnToolbarChange");
     }
 
     private void OnHideScienceDialogChange(bool arg0)
@@ -554,8 +566,16 @@ namespace KerboKatz.ASS
         if (_icon != value)
         {
           _icon = value;
-          ToolbarBase.UpdateIcon(modName, icon);
+          ToolbarBase.UpdateIcon(this, icon);
         }
+      }
+    }
+
+    public bool useKKToolbar
+    {
+      get
+      {
+        return settings.useKKToolbar;
       }
     }
 
