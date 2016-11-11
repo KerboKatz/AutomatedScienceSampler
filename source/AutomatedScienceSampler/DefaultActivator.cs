@@ -26,7 +26,7 @@ namespace KerboKatz.ASS
         _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": Experiment is inoperable");
         return false;
       }
-      if (baseExperiment.Deployed)
+      if (baseExperiment.Deployed && !baseExperiment.rerunnable)
       {
         _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": Experiment is deployed");
         return false;
