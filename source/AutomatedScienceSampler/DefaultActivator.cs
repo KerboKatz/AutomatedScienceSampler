@@ -16,6 +16,7 @@ namespace KerboKatz.ASS
 
     public bool CanRunExperiment(ModuleScienceExperiment baseExperiment, float currentScienceValue)
     {
+      _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": CanRunExperiment");
       if (!baseExperiment.experiment.IsAvailableWhile(ScienceUtil.GetExperimentSituation(FlightGlobals.ActiveVessel), FlightGlobals.currentMainBody))//
       {
         _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": Experiment isn't available in the current situation: ", ScienceUtil.GetExperimentSituation(FlightGlobals.ActiveVessel), "_", FlightGlobals.currentMainBody + "_", baseExperiment.experiment.situationMask);
@@ -42,6 +43,11 @@ namespace KerboKatz.ASS
         _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": Science value is less than cutoff threshold: ", currentScienceValue, "<", _AutomatedScienceSamplerInstance.craftSettings.threshold);
         return false;
       }
+      if(baseExperiment.GetData().Length > 0)
+      {
+        _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": Experiment already contains results!");
+        return false;
+      }
       if (!baseExperiment.experiment.IsUnlocked())
       {
         _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": Experiment is locked");
@@ -52,6 +58,7 @@ namespace KerboKatz.ASS
 
     public void DeployExperiment(ModuleScienceExperiment baseExperiment)
     {
+      _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": DeployExperiment");
       if (_AutomatedScienceSamplerInstance.craftSettings.hideScienceDialog)
       {
         var stagingSetting = baseExperiment.useStaging;
@@ -78,6 +85,7 @@ namespace KerboKatz.ASS
 
     public bool CanReset(ModuleScienceExperiment baseExperiment)
     {
+      _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": CanReset");
       if (!baseExperiment.Inoperable)
       {
         _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": Experiment isn't inoperable");
@@ -125,6 +133,7 @@ namespace KerboKatz.ASS
 
     public bool CanTransfer(ModuleScienceExperiment baseExperiment, ModuleScienceContainer moduleScienceContainer)
     {
+      _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": CanTransfer");
       if (baseExperiment.GetScienceCount() == 0)
       {
         _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": Experiment has no data skiping transfer ", baseExperiment.GetScienceCount());
