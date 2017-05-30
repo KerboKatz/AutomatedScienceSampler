@@ -75,7 +75,7 @@ namespace KerboKatz.ASS
     public ScienceSubject GetScienceSubject(ModuleScienceExperiment baseExperiment)
     {
       //experiment.BiomeIsRelevantWhile
-      return ResearchAndDevelopment.GetExperimentSubject(baseExperiment.experiment, ScienceUtil.GetExperimentSituation(FlightGlobals.ActiveVessel), FlightGlobals.currentMainBody, CurrentBiome(baseExperiment.experiment));
+      return ResearchAndDevelopment.GetExperimentSubject(baseExperiment.experiment, ScienceUtil.GetExperimentSituation(FlightGlobals.ActiveVessel), FlightGlobals.currentMainBody, CurrentBiome(baseExperiment.experiment), ScienceUtil.GetBiomedisplayName(FlightGlobals.currentMainBody, CurrentBiome(baseExperiment.experiment)));
     }
 
     public float GetScienceValue(ModuleScienceExperiment baseExperiment, Dictionary<string, int> shipCotainsExperiments, ScienceSubject currentScienceSubject)
