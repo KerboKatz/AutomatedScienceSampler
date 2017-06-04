@@ -43,7 +43,7 @@ namespace KerboKatz.ASS
         _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": Science value is less than cutoff threshold: ", currentScienceValue, "<", _AutomatedScienceSamplerInstance.craftSettings.threshold);
         return false;
       }
-      if(baseExperiment.GetData().Length > 0)
+      if (baseExperiment.GetData().Length > 0)
       {
         _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": Experiment already contains results!");
         return false;
@@ -74,8 +74,8 @@ namespace KerboKatz.ASS
 
     public ScienceSubject GetScienceSubject(ModuleScienceExperiment baseExperiment)
     {
-      //experiment.BiomeIsRelevantWhile
-      return ResearchAndDevelopment.GetExperimentSubject(baseExperiment.experiment, ScienceUtil.GetExperimentSituation(FlightGlobals.ActiveVessel), FlightGlobals.currentMainBody, CurrentBiome(baseExperiment.experiment));
+      string currentBiome = CurrentBiome(baseExperiment.experiment);
+      return ResearchAndDevelopment.GetExperimentSubject(baseExperiment.experiment, ScienceUtil.GetExperimentSituation(FlightGlobals.ActiveVessel), FlightGlobals.currentMainBody, currentBiome, ScienceUtil.GetBiomedisplayName(FlightGlobals.currentMainBody, currentBiome));
     }
 
     public float GetScienceValue(ModuleScienceExperiment baseExperiment, Dictionary<string, int> shipCotainsExperiments, ScienceSubject currentScienceSubject)
@@ -131,9 +131,15 @@ namespace KerboKatz.ASS
       baseExperiment.ResetExperiment();
     }
 
-    public bool CanTransfer(ModuleScienceExperiment baseExperiment, ModuleScienceContainer moduleScienceContainer)
+    public bool CanTransfer(ModuleScienceExperiment baseExperiment, IScienceDataContainer moduleScienceContainer)
     {
       _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": CanTransfer");
+
+      if (moduleScienceContainer == baseExperiment as IScienceDataContainer)
+      {//no point in transfering to the same container
+        _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": Experiment is same as Container ", baseExperiment.GetScienceCount());
+        return false;
+      }
       if (baseExperiment.GetScienceCount() == 0)
       {
         _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": Experiment has no data skiping transfer ", baseExperiment.GetScienceCount());
@@ -162,10 +168,10 @@ namespace KerboKatz.ASS
       return true;
     }
 
-    public void Transfer(ModuleScienceExperiment baseExperiment, ModuleScienceContainer moduleScienceContainer)
+    public void Transfer(ModuleScienceExperiment baseExperiment, IScienceDataContainer moduleScienceContainer)
     {
       _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": transfering");
-      moduleScienceContainer.StoreData(new List<IScienceDataContainer>() { baseExperiment }, _AutomatedScienceSamplerInstance.craftSettings.dumpDuplicates);
+      moduleScienceContainer.StoreData(baseExperiment, _AutomatedScienceSamplerInstance.craftSettings.dumpDuplicates);
     }
 
     private string CurrentBiome(ScienceExperiment baseExperiment)

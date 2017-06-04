@@ -62,8 +62,8 @@ namespace KerboKatz.ASS.DMMSAG
       {
         ExperimentSituations situation = ScienceUtil.GetExperimentSituation(FlightGlobals.ActiveVessel);
         var biome = currentExperiment.getBiome(situation);
-        _AutomatedScienceSamplerInstance.Log(biome, "_", situation, "_", ResearchAndDevelopment.GetExperimentSubject(ResearchAndDevelopment.GetExperiment(currentExperiment.experimentID), situation, FlightGlobals.currentMainBody, biome) == null);
-        return ResearchAndDevelopment.GetExperimentSubject(ResearchAndDevelopment.GetExperiment(currentExperiment.experimentID), situation, FlightGlobals.currentMainBody, biome);
+        _AutomatedScienceSamplerInstance.Log(biome, "_", situation, "_", ResearchAndDevelopment.GetExperimentSubject(ResearchAndDevelopment.GetExperiment(currentExperiment.experimentID), situation, FlightGlobals.currentMainBody, biome, ScienceUtil.GetBiomedisplayName(FlightGlobals.currentMainBody, biome)) == null);
+        return ResearchAndDevelopment.GetExperimentSubject(ResearchAndDevelopment.GetExperiment(currentExperiment.experimentID), situation, FlightGlobals.currentMainBody, biome, ScienceUtil.GetBiomedisplayName(FlightGlobals.currentMainBody, biome));
       }
     }
 
@@ -121,7 +121,7 @@ namespace KerboKatz.ASS.DMMSAG
       currentExperiment.ResetExperiment();
     }
 
-    public bool CanTransfer(ModuleScienceExperiment baseExperiment, ModuleScienceContainer moduleScienceContainer)
+    public bool CanTransfer(ModuleScienceExperiment baseExperiment, IScienceDataContainer moduleScienceContainer)
     {
       var currentExperiment = baseExperiment as DMModuleScienceAnimateGeneric.DMModuleScienceAnimateGeneric;
       if ((currentExperiment as IScienceDataContainer).GetScienceCount() == 0)
@@ -152,11 +152,11 @@ namespace KerboKatz.ASS.DMMSAG
       return true;
     }
 
-    public void Transfer(ModuleScienceExperiment baseExperiment, ModuleScienceContainer moduleScienceContainer)
+    public void Transfer(ModuleScienceExperiment baseExperiment, IScienceDataContainer moduleScienceContainer)
     {
       var currentExperiment = baseExperiment as DMModuleScienceAnimateGeneric.DMModuleScienceAnimateGeneric;
       _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": transfering");
-      moduleScienceContainer.StoreData(new List<IScienceDataContainer>() { currentExperiment as DMModuleScienceAnimateGeneric.DMModuleScienceAnimateGeneric }, _AutomatedScienceSamplerInstance.craftSettings.dumpDuplicates);
+      moduleScienceContainer.StoreData(currentExperiment as DMModuleScienceAnimateGeneric.DMModuleScienceAnimateGeneric, _AutomatedScienceSamplerInstance.craftSettings.dumpDuplicates);
     }
 
     public List<Type> GetValidTypes()

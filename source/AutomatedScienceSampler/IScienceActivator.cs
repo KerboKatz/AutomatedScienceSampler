@@ -22,8 +22,8 @@ namespace KerboKatz.ASS
 
     void Reset(ModuleScienceExperiment baseExperimentModule);
 
-    bool CanTransfer(ModuleScienceExperiment baseExperimentModule, ModuleScienceContainer moduleScienceContainer);
+    bool CanTransfer(ModuleScienceExperiment baseExperimentModule, IScienceDataContainer moduleScienceContainer);
 
-    void Transfer(ModuleScienceExperiment baseExperimentModule, ModuleScienceContainer moduleScienceContainer);
+    void Transfer(ModuleScienceExperiment baseExperimentModule, IScienceDataContainer moduleScienceContainer);
   }
 }

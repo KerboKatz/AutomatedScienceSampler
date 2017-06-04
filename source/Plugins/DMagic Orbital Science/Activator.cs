@@ -78,7 +78,7 @@ namespace KerboKatz.ASS.DMOS
           return null;
         }
         //_AutomatedScienceSamplerInstance.Log(ResearchAndDevelopment.GetExperiment(currentExperiment.experimentID) == null, FlightGlobals.currentMainBody == null, biome == null);
-        var scienceSubject = ResearchAndDevelopment.GetExperimentSubject(ResearchAndDevelopment.GetExperiment(currentExperiment.experimentID), situation, FlightGlobals.currentMainBody, biome);
+        var scienceSubject = ResearchAndDevelopment.GetExperimentSubject(ResearchAndDevelopment.GetExperiment(currentExperiment.experimentID), situation, FlightGlobals.currentMainBody, biome, ScienceUtil.GetBiomedisplayName(FlightGlobals.currentMainBody, biome));
         _AutomatedScienceSamplerInstance.Log(biome, "_", situation, "_", scienceSubject == null);
         return scienceSubject;
       }
@@ -146,7 +146,7 @@ namespace KerboKatz.ASS.DMOS
       currentExperiment.ResetExperiment();
     }
 
-    public bool CanTransfer(ModuleScienceExperiment baseExperiment, ModuleScienceContainer moduleScienceContainer)
+    public bool CanTransfer(ModuleScienceExperiment baseExperiment, IScienceDataContainer moduleScienceContainer)
     {
       var currentExperiment = baseExperiment as DMModuleScienceAnimate;
       if ((currentExperiment as IScienceDataContainer).GetScienceCount() == 0)
@@ -177,11 +177,11 @@ namespace KerboKatz.ASS.DMOS
       return true;
     }
 
-    public void Transfer(ModuleScienceExperiment baseExperiment, ModuleScienceContainer moduleScienceContainer)
+    public void Transfer(ModuleScienceExperiment baseExperiment, IScienceDataContainer moduleScienceContainer)
     {
       var currentExperiment = baseExperiment as DMModuleScienceAnimate;
       _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": transfering");
-      moduleScienceContainer.StoreData(new List<IScienceDataContainer>() { currentExperiment as DMModuleScienceAnimate }, _AutomatedScienceSamplerInstance.craftSettings.dumpDuplicates);
+      moduleScienceContainer.StoreData(currentExperiment as DMModuleScienceAnimate , _AutomatedScienceSamplerInstance.craftSettings.dumpDuplicates);
     }
 
     public List<Type> GetValidTypes()

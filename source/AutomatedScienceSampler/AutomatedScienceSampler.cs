@@ -22,7 +22,7 @@ namespace KerboKatz.ASS
     private static List<GameScenes> _activeScences = new List<GameScenes>() { GameScenes.FLIGHT };
     private Sprite _icon = AssetLoader.GetAsset<Sprite>("icon56", "Icons/AutomatedScienceSampler", "AutomatedScienceSampler/AutomatedScienceSampler");
     private List<ModuleScienceExperiment> experiments;
-    private List<ModuleScienceContainer> scienceContainers;
+    private List<IScienceDataContainer> scienceContainers;
     private Dropdown transferScienceUIElement;
     private bool uiElementsReady;
     private string settingsUIName;
@@ -185,7 +185,7 @@ namespace KerboKatz.ASS
       Log("OnTransferScienceChange ");
       if (craftSettings.currentContainer != 0 && scienceContainers.Count >= craftSettings.currentContainer)
       {
-        StartCoroutine(DisableHighlight(0.25f, scienceContainers[craftSettings.currentContainer - 1].part));
+        StartCoroutine(DisableHighlight(0.25f, ((PartModule)scienceContainers[craftSettings.currentContainer - 1]).part));
       }
       SaveSettings();
     }
@@ -407,7 +407,7 @@ namespace KerboKatz.ASS
       }
       else if (CanTransferExperiment(experiment, activator))
       {
-        
+
         activator.Transfer(experiment, scienceContainers[craftSettings.currentContainer - 1]);
       }
       else if (CanResetExperiment(experiment, activator))
@@ -477,7 +477,7 @@ namespace KerboKatz.ASS
         return false;
       if (craftSettings.currentContainer > scienceContainers.Count)
         return false;
-      if (scienceContainers[craftSettings.currentContainer - 1].vessel != FlightGlobals.ActiveVessel)
+      if (((PartModule)scienceContainers[craftSettings.currentContainer - 1]).vessel != FlightGlobals.ActiveVessel)
         return false;
       return true;
     }
@@ -509,11 +509,20 @@ namespace KerboKatz.ASS
         transferScienceUIElement.options.RemoveAt(transferScienceUIElement.options.Count - 1);
       }
       experiments = FlightGlobals.ActiveVessel.FindPartModulesImplementing<ModuleScienceExperiment>();
-      scienceContainers = FlightGlobals.ActiveVessel.FindPartModulesImplementing<ModuleScienceContainer>();
-      shipCotainsExperiments.Clear();
-      foreach (ModuleScienceContainer currentContainer in scienceContainers)
+      //scienceContainers = FlightGlobals.ActiveVessel.FindPartModulesImplementing<ModuleScienceContainer>();
+      scienceContainers = FlightGlobals.ActiveVessel.FindPartModulesImplementing<IScienceDataContainer>();
+      for(var i = scienceContainers.Count-1; i >= 0; i--)
       {
-        AddOptionToDropdown(transferScienceUIElement, currentContainer.part.partInfo.title);
+        if (scienceContainers[i].GetType().IsTypeOf(typeof(ModuleScienceExperiment)))//dont want stock ModuleScienceExperiment as a transfer target as these can only contain the experiments results 
+        {
+          Log("Removing ", (scienceContainers[i] as PartModule).moduleName, " as transfer target");
+          scienceContainers.RemoveAt(i);
+        }
+      }
+      shipCotainsExperiments.Clear();
+      foreach (var currentContainer in scienceContainers)
+      {
+        AddOptionToDropdown(transferScienceUIElement, (currentContainer as PartModule).part.partInfo.title);
         foreach (var data in currentContainer.GetData())
         {
           AddToContainer(data.subjectID);
@@ -536,6 +545,7 @@ namespace KerboKatz.ASS
         shipCotainsExperiments.Add(subjectID, add + 1);
       }
     }
+
 
     #region IToolbar
 

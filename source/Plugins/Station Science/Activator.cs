@@ -86,7 +86,8 @@ namespace KerboKatz.ASS.SS
     public ScienceSubject GetScienceSubject(ModuleScienceExperiment baseExperiment)
     {
       //experiment.BiomeIsRelevantWhile
-      return ResearchAndDevelopment.GetExperimentSubject(baseExperiment.experiment, ScienceUtil.GetExperimentSituation(FlightGlobals.ActiveVessel), FlightGlobals.currentMainBody, CurrentBiome(baseExperiment.experiment));
+      string biome = CurrentBiome(baseExperiment.experiment);
+      return ResearchAndDevelopment.GetExperimentSubject(baseExperiment.experiment, ScienceUtil.GetExperimentSituation(FlightGlobals.ActiveVessel), FlightGlobals.currentMainBody, biome, ScienceUtil.GetBiomedisplayName(FlightGlobals.currentMainBody, biome));
     }
 
     public float GetScienceValue(ModuleScienceExperiment baseExperiment, Dictionary<string, int> shipCotainsExperiments, ScienceSubject currentScienceSubject)
@@ -141,7 +142,7 @@ namespace KerboKatz.ASS.SS
       baseExperiment.ResetExperiment();
     }
 
-    public bool CanTransfer(ModuleScienceExperiment baseExperiment, ModuleScienceContainer moduleScienceContainer)
+    public bool CanTransfer(ModuleScienceExperiment baseExperiment, IScienceDataContainer moduleScienceContainer)
     {
       if (baseExperiment.GetScienceCount() == 0)
       {
@@ -171,10 +172,10 @@ namespace KerboKatz.ASS.SS
       return true;
     }
 
-    public void Transfer(ModuleScienceExperiment baseExperiment, ModuleScienceContainer moduleScienceContainer)
+    public void Transfer(ModuleScienceExperiment baseExperiment, IScienceDataContainer moduleScienceContainer)
     {
       _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": transfering");
-      moduleScienceContainer.StoreData(new List<IScienceDataContainer>() { baseExperiment }, _AutomatedScienceSamplerInstance.craftSettings.dumpDuplicates);
+      moduleScienceContainer.StoreData(baseExperiment , _AutomatedScienceSamplerInstance.craftSettings.dumpDuplicates);
     }
 
     private string CurrentBiome(ScienceExperiment baseExperiment)
