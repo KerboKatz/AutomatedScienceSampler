@@ -1,6 +1,7 @@
 ﻿using DMModuleScienceAnimateGeneric;
 using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace KerboKatz.ASS.DMMSAG
 {
@@ -19,27 +20,27 @@ namespace KerboKatz.ASS.DMMSAG
       var currentExperiment = baseExperiment as DMModuleScienceAnimateGeneric.DMModuleScienceAnimateGeneric;
       if (currentScienceValue < _AutomatedScienceSamplerInstance.craftSettings.threshold)
       {
-        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Science value is less than cutoff threshold: ", currentScienceValue, "<", _AutomatedScienceSamplerInstance.craftSettings.threshold);
+        Log(currentExperiment.experimentID, ": Science value is less than cutoff threshold: ", currentScienceValue, "<", _AutomatedScienceSamplerInstance.craftSettings.threshold);
         return false;
       }
       if (!currentExperiment.rerunnable && !_AutomatedScienceSamplerInstance.craftSettings.oneTimeOnly)
       {
-        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Runing rerunable experiments is disabled");
+        Log(currentExperiment.experimentID, ": Runing rerunable experiments is disabled");
         return false;
       }
       if (currentExperiment.Inoperable)
       {
-        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment is inoperable");
+        Log(currentExperiment.experimentID, ": Experiment is inoperable");
         return false;
       }
       if (currentExperiment.Deployed)
       {
-        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment is deployed");
+        Log(currentExperiment.experimentID, ": Experiment is deployed");
         return false;
       }
       if (!currentExperiment.experiment.IsUnlocked())
       {
-        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment is locked");
+        Log(currentExperiment.experimentID, ": Experiment is locked");
         return false;
       }
       return currentExperiment.canConduct();
@@ -62,7 +63,6 @@ namespace KerboKatz.ASS.DMMSAG
       {
         ExperimentSituations situation = ScienceUtil.GetExperimentSituation(FlightGlobals.ActiveVessel);
         var biome = currentExperiment.getBiome(situation);
-        _AutomatedScienceSamplerInstance.Log(biome, "_", situation, "_", ResearchAndDevelopment.GetExperimentSubject(ResearchAndDevelopment.GetExperiment(currentExperiment.experimentID), situation, FlightGlobals.currentMainBody, biome, ScienceUtil.GetBiomedisplayName(FlightGlobals.currentMainBody, biome)) == null);
         return ResearchAndDevelopment.GetExperimentSubject(ResearchAndDevelopment.GetExperiment(currentExperiment.experimentID), situation, FlightGlobals.currentMainBody, biome, ScienceUtil.GetBiomedisplayName(FlightGlobals.currentMainBody, biome));
       }
     }
@@ -79,22 +79,22 @@ namespace KerboKatz.ASS.DMMSAG
       var currentExperiment = baseExperiment as DMModuleScienceAnimateGeneric.DMModuleScienceAnimateGeneric;
       if (!currentExperiment.Inoperable)
       {
-        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment isn't inoperable");
+        Log(currentExperiment.experimentID, ": Experiment isn't inoperable");
         return false;
       }
       if (!currentExperiment.Deployed)
       {
-        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment isn't deployed!");
+        Log(currentExperiment.experimentID, ": Experiment isn't deployed!");
         return false;
       }
       if ((currentExperiment as IScienceDataContainer).GetScienceCount() > 0)
       {
-        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment has data!");
+        Log(currentExperiment.experimentID, ": Experiment has data!");
         return false;
       }
       if (!currentExperiment.resettable)
       {
-        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment isn't resetable");
+        Log(currentExperiment.experimentID, ": Experiment isn't resetable");
         return false;
       }
       bool hasScientist = false;
@@ -108,7 +108,7 @@ namespace KerboKatz.ASS.DMMSAG
       }
       if (!hasScientist)
       {
-        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Vessel has no scientist");
+        Log(currentExperiment.experimentID, ": Vessel has no scientist");
         return false;
       }
       return true;
@@ -117,7 +117,7 @@ namespace KerboKatz.ASS.DMMSAG
     public void Reset(ModuleScienceExperiment baseExperiment)
     {
       var currentExperiment = baseExperiment as DMModuleScienceAnimateGeneric.DMModuleScienceAnimateGeneric;
-      _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Reseting experiment");
+      Log(currentExperiment.experimentID, ": Reseting experiment");
       currentExperiment.ResetExperiment();
     }
 
@@ -126,14 +126,14 @@ namespace KerboKatz.ASS.DMMSAG
       var currentExperiment = baseExperiment as DMModuleScienceAnimateGeneric.DMModuleScienceAnimateGeneric;
       if ((currentExperiment as IScienceDataContainer).GetScienceCount() == 0)
       {
-        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment has no data skiping transfer. Data found: ", (currentExperiment as IScienceDataContainer).GetScienceCount());
+        Log(currentExperiment.experimentID, ": Experiment has no data skiping transfer. Data found: ", (currentExperiment as IScienceDataContainer).GetScienceCount());
         return false;
       }
       if (!currentExperiment.IsRerunnable())
       {
         if (!_AutomatedScienceSamplerInstance.craftSettings.transferAllData)
         {
-          _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment isn't rerunnable and transferAllData is turned off.");
+          Log(currentExperiment.experimentID, ": Experiment isn't rerunnable and transferAllData is turned off.");
           return false;
         }
       }
@@ -143,19 +143,19 @@ namespace KerboKatz.ASS.DMMSAG
         {
           if (moduleScienceContainer.HasData(data))
           {
-            _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Target already has experiment and dumping is disabled.");
+            Log(currentExperiment.experimentID, ": Target already has experiment and dumping is disabled.");
             return false;
           }
         }
       }
-      _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": We can transfer the science!");
+      Log(currentExperiment.experimentID, ": We can transfer the science!");
       return true;
     }
 
     public void Transfer(ModuleScienceExperiment baseExperiment, IScienceDataContainer moduleScienceContainer)
     {
       var currentExperiment = baseExperiment as DMModuleScienceAnimateGeneric.DMModuleScienceAnimateGeneric;
-      _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": transfering");
+      Log(currentExperiment.experimentID, ": transfering");
       moduleScienceContainer.StoreData(currentExperiment as DMModuleScienceAnimateGeneric.DMModuleScienceAnimateGeneric, _AutomatedScienceSamplerInstance.craftSettings.dumpDuplicates);
     }
 
@@ -172,6 +172,15 @@ namespace KerboKatz.ASS.DMMSAG
         }
       });
       return types;
+    }
+    private void Log(params object[] msg)
+    {
+      var debugStringBuilder = new StringBuilder();
+      foreach (var debugString in msg)
+      {
+        debugStringBuilder.Append(debugString.ToString());
+      }
+      _AutomatedScienceSamplerInstance.Log("[DMagicModuleScienceAnimateGeneric]", debugStringBuilder);
     }
   }
 }

@@ -1,6 +1,7 @@
 ﻿using StationScience;
 using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace KerboKatz.ASS.SS
 {
@@ -20,48 +21,48 @@ namespace KerboKatz.ASS.SS
       var isActive = currentExperiment.Events["StartExperiment"].active;
       if (isActive)
       {
-        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": StationExperiment didn't start yet! You might want to start it manually!");
+        Log(currentExperiment.experimentID, ": StationExperiment didn't start yet! You might want to start it manually!");
         return false;
       }
       if (StationExperiment.checkBoring(FlightGlobals.ActiveVessel, false))
       {
-        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": StationExperiment says this location is boring!");
+        Log(currentExperiment.experimentID, ": StationExperiment says this location is boring!");
         return false;
       }
       if (!currentExperiment.finished() && !isActive)
       {
-        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": StationExperiment isn't finished yet!");
+        Log(currentExperiment.experimentID, ": StationExperiment isn't finished yet!");
         return false;
       }
       if (!currentExperiment.experiment.IsAvailableWhile(ScienceUtil.GetExperimentSituation(FlightGlobals.ActiveVessel), FlightGlobals.currentMainBody))//
       {
-        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment isn't available in the current situation: ", ScienceUtil.GetExperimentSituation(FlightGlobals.ActiveVessel), "_", FlightGlobals.currentMainBody + "_", currentExperiment.experiment.situationMask);
+        Log(currentExperiment.experimentID, ": Experiment isn't available in the current situation: ", ScienceUtil.GetExperimentSituation(FlightGlobals.ActiveVessel), "_", FlightGlobals.currentMainBody + "_", currentExperiment.experiment.situationMask);
         return false;
       }
       if (currentExperiment.Inoperable)
       {
-        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment is inoperable");
+        Log(currentExperiment.experimentID, ": Experiment is inoperable");
         return false;
       }
       if (currentExperiment.Deployed)
       {
-        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment is deployed");
+        Log(currentExperiment.experimentID, ": Experiment is deployed");
         return false;
       }
 
       if (!currentExperiment.rerunnable && !_AutomatedScienceSamplerInstance.craftSettings.oneTimeOnly)
       {
-        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Runing rerunable experiments is disabled");
+        Log(currentExperiment.experimentID, ": Runing rerunable experiments is disabled");
         return false;
       }
       if (currentScienceValue < _AutomatedScienceSamplerInstance.craftSettings.threshold)
       {
-        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Science value is less than cutoff threshold: ", currentScienceValue, "<", _AutomatedScienceSamplerInstance.craftSettings.threshold);
+        Log(currentExperiment.experimentID, ": Science value is less than cutoff threshold: ", currentScienceValue, "<", _AutomatedScienceSamplerInstance.craftSettings.threshold);
         return false;
       }
       if (!currentExperiment.experiment.IsUnlocked())
       {
-        _AutomatedScienceSamplerInstance.Log(currentExperiment.experimentID, ": Experiment is locked");
+        Log(currentExperiment.experimentID, ": Experiment is locked");
         return false;
       }
       return true;
@@ -99,23 +100,23 @@ namespace KerboKatz.ASS.SS
     {
       if (!baseExperiment.Inoperable)
       {
-        _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": Experiment isn't inoperable");
+        Log(baseExperiment.experimentID, ": Experiment isn't inoperable");
         return false;
       }
       if (!baseExperiment.Deployed)
       {
-        _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": Experiment isn't deployed!");
+        Log(baseExperiment.experimentID, ": Experiment isn't deployed!");
         return false;
       }
       if (baseExperiment.GetScienceCount() > 0)
       {
-        _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": Experiment has data!");
+        Log(baseExperiment.experimentID, ": Experiment has data!");
         return false;
       }
 
       if (!baseExperiment.resettable)
       {
-        _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": Experiment isn't resetable");
+        Log(baseExperiment.experimentID, ": Experiment isn't resetable");
         return false;
       }
       bool hasScientist = false;
@@ -129,16 +130,16 @@ namespace KerboKatz.ASS.SS
       }
       if (!hasScientist)
       {
-        _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": Vessel has no scientist");
+        Log(baseExperiment.experimentID, ": Vessel has no scientist");
         return false;
       }
-      _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": Can reset");
+      Log(baseExperiment.experimentID, ": Can reset");
       return true;
     }
 
     public void Reset(ModuleScienceExperiment baseExperiment)
     {
-      _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": Reseting experiment");
+      Log(baseExperiment.experimentID, ": Reseting experiment");
       baseExperiment.ResetExperiment();
     }
 
@@ -146,14 +147,14 @@ namespace KerboKatz.ASS.SS
     {
       if (baseExperiment.GetScienceCount() == 0)
       {
-        _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": Experiment has no data skiping transfer ", baseExperiment.GetScienceCount());
+        Log(baseExperiment.experimentID, ": Experiment has no data skiping transfer ", baseExperiment.GetScienceCount());
         return false;
       }
       if (!baseExperiment.IsRerunnable())
       {
         if (!_AutomatedScienceSamplerInstance.craftSettings.transferAllData)
         {
-          _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": Experiment isn't rerunnable and transferAllData is turned off.");
+          Log(baseExperiment.experimentID, ": Experiment isn't rerunnable and transferAllData is turned off.");
           return false;
         }
       }
@@ -163,18 +164,18 @@ namespace KerboKatz.ASS.SS
         {
           if (moduleScienceContainer.HasData(data))
           {
-            _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": Target already has experiment and dumping is disabled.");
+            Log(baseExperiment.experimentID, ": Target already has experiment and dumping is disabled.");
             return false;
           }
         }
       }
-      _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": We can transfer the science!");
+      Log(baseExperiment.experimentID, ": We can transfer the science!");
       return true;
     }
 
     public void Transfer(ModuleScienceExperiment baseExperiment, IScienceDataContainer moduleScienceContainer)
     {
-      _AutomatedScienceSamplerInstance.Log(baseExperiment.experimentID, ": transfering");
+      Log(baseExperiment.experimentID, ": transfering");
       moduleScienceContainer.StoreData(baseExperiment , _AutomatedScienceSamplerInstance.craftSettings.dumpDuplicates);
     }
 
@@ -198,7 +199,7 @@ namespace KerboKatz.ASS.SS
       }
       else
       {
-        _AutomatedScienceSamplerInstance.Log("currentVessel && currentBody == null");
+        Log("currentVessel && currentBody == null");
       }
       return string.Empty;
     }
@@ -216,6 +217,15 @@ namespace KerboKatz.ASS.SS
         }
       });
       return types;
+    }
+    private void Log(params object[] msg)
+    {
+      var debugStringBuilder = new StringBuilder();
+      foreach (var debugString in msg)
+      {
+        debugStringBuilder.Append(debugString.ToString());
+      }
+      _AutomatedScienceSamplerInstance.Log("[StationScience]", debugStringBuilder);
     }
   }
 }

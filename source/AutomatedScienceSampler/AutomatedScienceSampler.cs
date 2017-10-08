@@ -287,6 +287,10 @@ namespace KerboKatz.ASS
     private void OnVesselChange(Vessel data)
     {
       Log("OnVesselChange");
+      if (FlightGlobals.ActiveVessel == null) { 
+        Log("ActiveVessel is null! this shouldn't happen!");
+        return;
+      }
       GetCraftSettings();
       UpdateShipInformation();
     }
