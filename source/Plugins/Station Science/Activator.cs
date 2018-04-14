@@ -24,12 +24,12 @@ namespace KerboKatz.ASS.SS
         Log(currentExperiment.experimentID, ": StationExperiment didn't start yet! You might want to start it manually!");
         return false;
       }
-      if (StationExperiment.checkBoring(FlightGlobals.ActiveVessel, false))
+      if (StationExperiment.CheckBoring(FlightGlobals.ActiveVessel, false))
       {
         Log(currentExperiment.experimentID, ": StationExperiment says this location is boring!");
         return false;
       }
-      if (!currentExperiment.finished() && !isActive)
+      if (!currentExperiment.Finished() && !isActive)
       {
         Log(currentExperiment.experimentID, ": StationExperiment isn't finished yet!");
         return false;

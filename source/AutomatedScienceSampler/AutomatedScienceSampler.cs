@@ -41,7 +41,7 @@ namespace KerboKatz.ASS
       displayName = "Automated Science Sampler";
       settingsUIName = "AutomatedScienceSampler";
       tooltip = "Use left click to turn AutomatedScienceSampler on/off.\n Use shift+left click to open the settings menu.";
-      requiresUtilities = new Version(1, 5, 1);
+      requiresUtilities = new Version(1, 5, 2);
       ToolbarBase.instance.Add(this);
       LoadSettings("AutomatedScienceSampler", "Settings");
       Log("Init done!");
@@ -129,7 +129,7 @@ namespace KerboKatz.ASS
     protected override void OnUIElemntInit(UIData uiWindow)
     {
       var prefabWindow = uiWindow.gameObject.transform as RectTransform;
-      uiContent = prefabWindow.FindChild("Content");
+      uiContent = prefabWindow.Find("Content");
       UpdateUIVisuals();
       InitToggle(uiContent, "DropOutOfWarp", settings.dropOutOfWarp, OnDropOutOfWarpChange);
       InitToggle(uiContent, "UsePerCraftSettings", settings.perCraftSetting, OnPerCraftSettingChange);
